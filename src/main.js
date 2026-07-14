@@ -8,7 +8,7 @@ const STATE = {
   provider: localStorage.getItem('provider') || 'opencode',
   model: localStorage.getItem('model') || 'big-pickle',
   mode: localStorage.getItem('mode') || 'articleV86',
-  renderProxyUrl: localStorage.getItem('renderProxyUrl') || '',
+  renderProxyUrl: localStorage.getItem('renderProxyUrl') || 'https://opencode-proxy-production-fd7d.up.railway.app',
   keyword: '',
   supportingKeywords: '',
   activeWebsite: localStorage.getItem('activeWebsite') || '',
