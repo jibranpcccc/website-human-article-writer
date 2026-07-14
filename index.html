@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Human Article Writer & Pinterest Image Prompt Generator</title>
+  <link rel="stylesheet" href="./src/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+  <!-- GORGEOUS WEBSITE SELECTOR OVERLAY -->
+  <div id="website-selector-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(10, 10, 14, 0.95); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); transition: all 0.3s ease;">
+    <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 40px; width: 90%; max-width: 650px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+      <h2 style="font-family: var(--font-title); font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 8px; letter-spacing: -0.5px;">Select Active Website Workspace</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px;">Choose a website workspace to load and save generated articles and image prompts separately.</p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+        <!-- TressAtlas Card -->
+        <div onclick="window.selectWebsiteFromModal('tressatlas')" style="cursor: pointer; border: 2px solid var(--border-color); border-radius: 12px; padding: 24px; text-align: left; transition: all 0.2s ease; background-color: rgba(255,255,255,0.01);" onmouseover="this.style.borderColor='var(--primary)'; this.style.backgroundColor='rgba(99,102,241,0.03)';" onmouseout="this.style.borderColor='var(--border-color)'; this.style.backgroundColor='rgba(255,255,255,0.01)';">
+          <div style="width: 44px; height: 44px; border-radius: 8px; background-color: rgba(99,102,241,0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 16px; border: 1px solid rgba(99,102,241,0.25);">
+            <i class="fas fa-atlas"></i>
+          </div>
+          <h3 style="font-family: var(--font-title); font-size: 1.15rem; font-weight: 600; color: white; margin-bottom: 6px;">TressAtlas</h3>
+          <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; margin: 0;">Style directory, visual boards, and structural layouts for fine-tuned hair guides.</p>
+        </div>
+        
+        <!-- TressCrew Card -->
+        <div onclick="window.selectWebsiteFromModal('tresscrew')" style="cursor: pointer; border: 2px solid var(--border-color); border-radius: 12px; padding: 24px; text-align: left; transition: all 0.2s ease; background-color: rgba(255,255,255,0.01);" onmouseover="this.style.borderColor='var(--secondary)'; this.style.backgroundColor='rgba(139,92,246,0.03)';" onmouseout="this.style.borderColor='var(--border-color)'; this.style.backgroundColor='rgba(255,255,255,0.01)';">
+          <div style="width: 44px; height: 44px; border-radius: 8px; background-color: rgba(139,92,246,0.1); color: var(--secondary); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 16px; border: 1px solid rgba(139,92,246,0.25);">
+            <i class="fas fa-users"></i>
+          </div>
+          <h3 style="font-family: var(--font-title); font-size: 1.15rem; font-weight: 600; color: white; margin-bottom: 6px;">TressCrew</h3>
+          <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; margin: 0;">Trend reviews, salon logs, and bold style transformations for modern crews.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- SETTINGS SIDEBAR -->
+    <aside>
+      <div class="logo-area">
+        <div class="logo-icon">H</div>
+        <div class="logo-text">
+          <h1>Article Writer</h1>
+          <p>Human V8.6 & Pinterest Images</p>
+        </div>
+      </div>
+
+      <!-- Theme and Provider Settings -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 class="section-title" style="margin: 0;">API Configuration</h3>
+          <button id="theme-toggle" class="theme-toggle" title="Toggle Theme">
+            <i id="theme-icon" class="fas fa-sun"></i>
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label for="provider-select">Provider</label>
+          <select id="provider-select">
+            <option value="gemini">Google Gemini (Recommended)</option>
+            <option value="openai">OpenAI GPT</option>
+            <option value="opencode">OpenCode (Zen API)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="model-select">Model</label>
+          <select id="model-select">
+            <!-- Filled dynamically by main.js -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="api-key-input">API Key</label>
+          <input type="password" id="api-key-input" placeholder="Paste your API key here..." autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Templates selector -->
+      <div>
+        <h3 class="section-title">Generation Template</h3>
+        <div class="form-group">
+          <label for="mode-select">Article Mode</label>
+          <select id="mode-select">
+            <option value="articleV86">Anti-Skeleton V8.6 (Human Style)</option>
+            <option value="listicle">30 Hairstyle Listicle Writer</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; margin-top: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 class="section-title" style="margin: 0;">Saved Articles</h3>
+          <div style="display: flex; gap: 5px;">
+            <button id="download-all-btn" class="btn btn-secondary" style="width: auto; padding: 4px 8px; font-size: 0.65rem; margin: 0; background-color: rgba(255,255,255,0.03); display: none;" title="Download all saved articles as one combined Markdown file">
+              <i class="fas fa-file-archive"></i> Combine
+            </button>
+            <button onclick="window.clearAllHistory()" class="btn btn-secondary" style="width: auto; padding: 4px 8px; font-size: 0.65rem; margin: 0; background-color: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.25); color: #f87171;" title="Delete all saved articles">
+              <i class="fas fa-trash"></i> Clear All
+            </button>
+          </div>
+        </div>
+        <div class="history-list" id="history-list">
+          <!-- Filled dynamically by main.js -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- DASHBOARD VIEW -->
+    <main>
+      <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px;">
+        <div class="dashboard-title" style="margin: 0; border: none; padding: 0;">
+          <h2 id="website-active-title" style="font-size: 1.4rem; font-family: var(--font-title); font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px;">TressAtlas Prompt Engine</h2>
+          <p id="website-subtitle" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Managing assets for tressatlas.com</p>
+        </div>
+        
+        <!-- Premium Website Switcher -->
+        <div class="website-switcher-pills" style="display: flex; gap: 4px; padding: 4px; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px;">
+          <button class="switcher-pill-btn active" id="btn-switch-tressatlas" onclick="window.switchWebsite('tressatlas')" style="padding: 6px 12px; font-size: 0.75rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; background-color: var(--primary); color: white; transition: all 0.2s ease;">
+            <i class="fas fa-atlas"></i> TressAtlas
+          </button>
+          <button class="switcher-pill-btn" id="btn-switch-tresscrew" onclick="window.switchWebsite('tresscrew')" style="padding: 6px 12px; font-size: 0.75rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; background-color: transparent; color: var(--text-secondary); transition: all 0.2s ease;">
+            <i class="fas fa-users"></i> TressCrew
+          </button>
+        </div>
+      </div>
+
+      <!-- INPUT FORM PANEL -->
+      <section class="glass-panel">
+        <div class="form-group">
+          <label for="keyword-input">Keywords (One per line for batch generation)</label>
+          <textarea id="keyword-input" rows="3" placeholder="women over 50&#10;women over 60&#10;round face thin hair">women over 50</textarea>
+        </div>
+
+        <div class="form-group" id="supporting-keywords-group" style="display: none;">
+          <label for="supporting-keywords-input">Supporting / LSI Keywords (Optional, one per line)</label>
+          <textarea id="supporting-keywords-input" rows="3" placeholder="Enter supporting keywords to insert into the listicle description..."></textarea>
+        </div>
+
+        <button id="generate-btn" class="btn btn-primary">
+          <i class="fas fa-magic"></i> Generate Full Output
+        </button>
+      </section>
+
+      <!-- LIVE PROGRESS PANEL -->
+      <section class="glass-panel progress-panel" id="progress-panel" style="display: none; flex-direction: column; gap: 20px;">
+        <div class="panel-header" style="margin: 0; border: none; padding-bottom: 8px; justify-content: space-between; align-items: center; display: flex;">
+          <h3 id="progress-status" style="margin: 0;">0% - Preparing pipeline...</h3>
+          <button id="cancel-batch-btn" class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem; display: none; background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #f87171; margin: 0;">
+            <i class="fas fa-ban"></i> Cancel Batch
+          </button>
+        </div>
+        
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progress-bar-fill"></div>
+        </div>
+
+        <!-- Batch Queue Container -->
+        <div id="batch-queue-container" style="display: none; flex-direction: column; gap: 6px; background-color: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+            <i class="fas fa-list-ol"></i>
+            <span>Batch Processing Queue:</span>
+          </div>
+          <div id="batch-queue-list" style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 4px; color: var(--text-muted);">
+            <!-- Queue items load dynamically -->
+          </div>
+        </div>
+
+        <div class="pipeline-flow">
+          <div class="pipeline-step" id="step-1">
+            <div class="step-icon"><i class="fas fa-file-alt"></i></div>
+            <div class="step-label">Article Part 1</div>
+            <div class="step-status">Waiting</div>
+          </div>
+          <div class="pipeline-step" id="step-2">
+            <div class="step-icon"><i class="fas fa-keyboard"></i></div>
+            <div class="step-label">Article Part 2</div>
+            <div class="step-status">Waiting</div>
+          </div>
+          <div class="pipeline-step" id="step-3">
+            <div class="step-icon"><i class="fas fa-feather-alt"></i></div>
+            <div class="step-label">Article Part 3</div>
+            <div class="step-status">Waiting</div>
+          </div>
+          <div class="pipeline-step" id="step-4">
+            <div class="step-icon"><i class="fas fa-heading"></i></div>
+            <div class="step-label">Format &amp; SEO</div>
+            <div class="step-status">Waiting</div>
+          </div>
+          <div class="pipeline-step" id="step-5">
+            <div class="step-icon"><i class="fas fa-image"></i></div>
+            <div class="step-label">Image Prompts</div>
+            <div class="step-status">Waiting</div>
+          </div>
+        </div>
+
+        <!-- AI Thinking / Reasoning Process Box -->
+        <div class="thinking-container" id="thinking-container" style="display: none; flex-direction: column; gap: 6px;">
+          <div style="font-size: 0.8rem; font-weight: 600; color: #a5b4fc; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-brain" id="brain-icon" style="color: var(--primary);"></i>
+            <span>AI Reasoning & Logic Process: <strong id="thinking-stage-title">Preparing...</strong></span>
+          </div>
+          <div id="thinking-preview-box" class="thinking-preview-box">
+            [AI is analyzing requirements and structuring logical steps...]
+          </div>
+        </div>
+
+        <!-- Live Draft Preview Box -->
+        <div class="live-draft-container">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <span><i class="fas fa-stream"></i> Live Content Stream</span>
+            <span class="badge badge-primary" id="live-word-count" style="font-size: 0.65rem;">0 words</span>
+          </div>
+          <div id="live-draft-preview" class="live-draft-preview">
+            [Draft content will begin streaming here as it is generated...]
+          </div>
+        </div>
+
+        <div class="progress-log" id="progress-log">
+          <!-- Live logs populate here -->
+        </div>
+      </section>
+
+      <!-- RESULTS TABS -->
+      <div class="results-tabs" id="results-tabs" style="display: none;">
+        <button class="tab-btn active" id="tab-article-btn" onclick="window.switchResultTab('article')">
+          <i class="fas fa-file-alt"></i> Article &amp; SEO Details
+        </button>
+        <button class="tab-btn" id="tab-blog-prompts-btn" onclick="window.switchResultTab('blog-prompts')">
+          <i class="fas fa-image"></i> Blog Post Image Prompts
+        </button>
+        <button class="tab-btn" id="tab-pinterest-prompts-btn" onclick="window.switchResultTab('pinterest-prompts')">
+          <i class="fab fa-pinterest"></i> Pinterest Image Prompts
+        </button>
+        <div style="margin-left: auto;">
+          <button onclick="window.clearCurrentResults()" class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem; margin: 0; background-color: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: #f87171;" title="Clear current results and start fresh">
+            <i class="fas fa-broom"></i> Clear Results
+          </button>
+        </div>
+      </div>
+
+      <!-- RESULTS CONTAINER -->
+      <div class="results-container" id="results-container" style="display: none;">
+        
+        <!-- ARTICLE TAB VIEW -->
+        <div id="article-tab-view" style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
+          <!-- SEO METADATA PANEL -->
+          <section class="glass-panel" id="seo-meta-card" style="display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--success);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+              <h3 style="font-family: var(--font-title); font-size: 1.1rem; font-weight: 600; color: var(--success); margin: 0;"><i class="fas fa-search-dollar"></i> SEO Meta Details</h3>
+              <span class="badge badge-primary">Blog ready</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+              <div>
+                <label style="font-weight: 600; font-size: 0.75rem;">Optimized SEO Title (H1)</label>
+                <div id="seo-title-preview" style="font-family: var(--font-title); font-weight: 700; font-size: 1.2rem; margin-top: 4px; color: var(--text-primary);">[Title]</div>
+              </div>
+              <div>
+                <label style="font-weight: 600; font-size: 0.75rem;">Meta Description (150-160 chars)</label>
+                <div id="seo-desc-preview" style="font-size: 0.85rem; line-height: 1.4; margin-top: 4px; color: var(--text-secondary); font-style: italic;">[Description]</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ARTICLE PREVIEW -->
+          <section class="glass-panel" style="display: flex; flex-direction: column; width: 100%;">
+            <div class="panel-header">
+              <h3>Final Structured Article</h3>
+              <div class="panel-actions" style="display: flex; gap: 8px;">
+                <button class="btn btn-primary" id="download-zip-btn" style="padding: 6px 12px; font-size: 0.8rem; width: auto; margin: 0; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none;">
+                  <i class="fas fa-file-archive"></i> Download ZIP Pack
+                </button>
+                <button class="btn btn-secondary" id="copy-article-btn" style="padding: 6px 12px; font-size: 0.8rem; width: auto; margin: 0;">
+                  <i class="fas fa-copy"></i> Copy Raw
+                </button>
+                <button class="btn btn-secondary" id="download-article-btn" style="padding: 6px 12px; font-size: 0.8rem; width: auto; margin: 0;">
+                  <i class="fas fa-download"></i> Download MD
+                </button>
+              </div>
+            </div>
+            <div class="panel-body rendered-markdown" id="article-body">
+              <!-- Article content loads here -->
+            </div>
+          </section>
+        </div>
+
+        <!-- BLOG POST IMAGE PROMPTS TAB VIEW -->
+        <div id="blog-prompts-tab-view" style="display: none; flex-direction: column; gap: 24px; width: 100%;">
+          <section class="glass-panel" style="display: flex; flex-direction: column; width: 100%;">
+            <div class="panel-header">
+              <h3><i class="fas fa-image" style="color: var(--secondary);"></i> Blog Post Image Prompts (20 images — V6.0 Full System)</h3>
+              <div class="panel-actions">
+                <button class="btn btn-secondary" id="copy-blog-prompts-btn" style="padding: 8px 14px; font-size: 0.82rem; width: auto; margin: 0;">
+                  <i class="fas fa-copy"></i> Copy All 20 Prompts
+                </button>
+                <button class="btn btn-primary" id="copy-raw-blog-prompts-btn" style="padding: 8px 14px; font-size: 0.82rem; width: auto; margin: 0; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none;">
+                  <i class="fas fa-list"></i> Copy Prompt Text Only
+                </button>
+              </div>
+            </div>
+            <div class="panel-body" id="blog-prompts-body">
+              <!-- Prompt cards load here -->
+            </div>
+          </section>
+        </div>
+
+        <!-- PINTEREST IMAGE PROMPTS TAB VIEW -->
+        <div id="pinterest-prompts-tab-view" style="display: none; flex-direction: column; gap: 24px; width: 100%;">
+          <section class="glass-panel" style="display: flex; flex-direction: column; width: 100%;">
+            <div class="panel-header">
+              <h3><i class="fab fa-pinterest" style="color: #E60023;"></i> Pinterest Image Prompts (30 images — V6.0 Full System)</h3>
+              <div class="panel-actions">
+                <button class="btn btn-secondary" id="copy-pinterest-prompts-btn" style="padding: 8px 14px; font-size: 0.82rem; width: auto; margin: 0;">
+                  <i class="fas fa-copy"></i> Copy All 30 Prompts
+                </button>
+                <button class="btn btn-primary" id="copy-raw-pinterest-prompts-btn" style="padding: 8px 14px; font-size: 0.82rem; width: auto; margin: 0; background: linear-gradient(135deg, #E60023, #ad081b); border: none;">
+                  <i class="fas fa-list"></i> Copy Prompt Text Only
+                </button>
+              </div>
+            </div>
+            <div class="panel-body" id="pinterest-prompts-body">
+              <!-- Prompt cards load here -->
+            </div>
+          </section>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

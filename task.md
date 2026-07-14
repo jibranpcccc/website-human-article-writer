@@ -1,0 +1,27 @@
+- [x] Initialize project files (`index.html`, `style.css`, `app.js`)
+- [x] Implement UI layout with a premium glassmorphic dark theme
+- [x] Implement Settings component for API Key & Model Selection (Gemini/OpenAI/OpenCode)
+- [x] Implement the core prompting engine inside `app.js` (including 3-part sequential generation, Heading Formatter, and Image Prompt System v6.0)
+- [x] Create the Listicle template prompt and the Anti-Skeleton V8.6 template prompt
+- [x] Add copy-to-clipboard and export tools
+- [x] Configure Vite to automatically select a random free port
+- [x] Verify execution using manual testing
+- [x] Add visual multi-stage pipeline status nodes
+- [x] Add live content streaming preview panel with word counter
+- [x] Parse and extract H1 SEO Title and Meta Description into dedicated results boxes
+- [x] Test OpenCode API and correct model ID to `big-pickle` (100% verified)
+- [x] Fix CORS NetworkError by setting up Vite proxies (local) and netlify redirects (production)
+- [x] Capture and extract `reasoning_content` from Big Pickle model responses
+- [x] Add a beautiful, styled AI Thinking & Logic Process panel to display reasoning logs in real time
+- [x] Enable raw markdown copying/downloading (fixed plain-text copy behavior)
+- [x] Add dynamic "View Image" visual preview button for generated Pinterest hairstyle prompts
+- [x] Fix double substitution of the phrase "short hairstyles for" in listicle template
+- [x] Force SEO Metadata Card display toggles on load
+- [x] Restructure scrolling layout (allow natural scroll on desktop/mobile and add sticky sidebar scroll)
+- [x] Fix image loading constraints (added no-referrer policy and cleaned/truncated image URLs)
+- [x] Create a clean, full-width Tabbed Results Workspace to toggle between Article and Prompts
+- [x] Add batch-copy button to extract and copy all 30 visual prompts together as a clean list
+- [x] Implement multiple keyword batch generation queue (textarea input)
+- [x] Add Cancel Batch control to stop generation gracefully and save tokens
+- [x] Render real-time progress indicators in queue (pending, active, completed, failed)
+- [x] Add session compilation tools ("Combine All") to download all saved items in history as one unified Markdown file

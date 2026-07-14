@@ -1,0 +1,21 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# IDE and system files
+.DS_Store
+Thumbs.db
+.planning/
+.agents/
+.gemini/
+.git/
+scratch/
+temp_api.mjs
+*.log
