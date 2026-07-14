@@ -8,6 +8,7 @@ const STATE = {
   provider: localStorage.getItem('provider') || 'opencode',
   model: localStorage.getItem('model') || 'big-pickle',
   mode: localStorage.getItem('mode') || 'articleV86',
+  renderProxyUrl: localStorage.getItem('renderProxyUrl') || '',
   keyword: '',
   supportingKeywords: '',
   activeWebsite: localStorage.getItem('activeWebsite') || '',
@@ -120,6 +121,19 @@ function init() {
   DOM.apiKeyInput.value = STATE.apiKey;
   DOM.providerSelect.value = STATE.provider;
   DOM.modeSelect.value = STATE.mode;
+  
+  // Render proxy URL field
+  const renderProxyInput = document.getElementById('render-proxy-input');
+  const renderProxyGroup = document.getElementById('render-proxy-group');
+  if (renderProxyInput) renderProxyInput.value = STATE.renderProxyUrl;
+  // Show Render proxy field only when OpenCode is selected
+  if (renderProxyGroup) renderProxyGroup.style.display = STATE.provider === 'opencode' ? 'block' : 'none';
+  if (renderProxyInput) {
+    renderProxyInput.addEventListener('input', (e) => {
+      STATE.renderProxyUrl = e.target.value.trim();
+      localStorage.setItem('renderProxyUrl', STATE.renderProxyUrl);
+    });
+  }
   
   updateModelOptions();
   DOM.modelSelect.value = STATE.model;
@@ -291,6 +305,9 @@ function handleProviderChange(e) {
   // select first model in list
   STATE.model = DOM.modelSelect.value;
   localStorage.setItem('model', STATE.model);
+  // Show Render proxy URL field only for OpenCode
+  const renderProxyGroup = document.getElementById('render-proxy-group');
+  if (renderProxyGroup) renderProxyGroup.style.display = STATE.provider === 'opencode' ? 'block' : 'none';
 }
 
 function updateModelOptions() {
@@ -406,6 +423,7 @@ async function handleGenerate() {
         mode: STATE.mode,
         keyword: currentKeyword,
         supportingKeywords: STATE.supportingKeywords,
+        renderProxyUrl: STATE.renderProxyUrl,
         onProgress: (status, percent) => {
           updateProgress(status, percent);
         },

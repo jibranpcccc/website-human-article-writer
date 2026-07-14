@@ -131,6 +131,7 @@ export async function generateContent({
   mode,
   keyword,
   supportingKeywords,
+  renderProxyUrl,
   onProgress,
   onDraftUpdate,
   onReasoning
@@ -150,8 +151,14 @@ export async function generateContent({
   const isProduction = import.meta.env.PROD;
   const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
   const usePhpProxy = isProduction && !isNetlify;
+  // Use Render proxy for OpenCode when a URL is provided (overrides all other routing)
+  const useRenderProxy = !!renderProxyUrl && provider === 'opencode';
 
-  if (provider === 'gemini') {
+  if (useRenderProxy) {
+    // Route through user's Render.com proxy — no 26-second timeout
+    baseUrl = `${renderProxyUrl.replace(/\/$/, '')}/proxy?url=${encodeURIComponent('https://opencode.ai/zen/v1/chat/completions')}`;
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  } else if (provider === 'gemini') {
     const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
     baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : `/api-gemini/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
   } else if (provider === 'openai') {
