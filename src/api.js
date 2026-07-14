@@ -94,6 +94,36 @@ function extractListicleHeadings(content) {
   return extracted.join('\n\n');
 }
 
+function extractGenderAndAge(keyword) {
+  const kw = keyword.toLowerCase();
+  let gender = 'women'; // default fallback
+  if (kw.includes('men') || kw.includes('man') || kw.includes('boy') || kw.includes('guy') || kw.includes('male')) {
+    gender = 'men';
+  } else if (kw.includes('women') || kw.includes('woman') || kw.includes('girl') || kw.includes('lady') || kw.includes('female')) {
+    gender = 'women';
+  }
+
+  let ageRange = 'over 50'; // default fallback
+  const ageMatch = kw.match(/over\s*(\d+)/i) || kw.match(/(\d+)\s*\+/);
+  if (ageMatch) {
+    ageRange = `over ${ageMatch[1]}`;
+  } else if (kw.includes('young') || kw.includes('kid')) {
+    ageRange = 'young adult';
+  } else if (kw.includes('teen')) {
+    ageRange = 'teenager';
+  } else if (kw.includes('30s') || kw.includes('30')) {
+    ageRange = 'in their 30s';
+  } else if (kw.includes('40s') || kw.includes('40')) {
+    ageRange = 'in their 40s';
+  } else if (kw.includes('60s') || kw.includes('60')) {
+    ageRange = 'in their 60s';
+  } else if (kw.includes('70s') || kw.includes('70')) {
+    ageRange = 'in their 70s';
+  }
+
+  return { gender, ageRange };
+}
+
 export async function generateContent({
   provider,
   apiKey,
@@ -290,12 +320,14 @@ export async function generateContent({
       const blogSysInstruction = 'You are an expert blog content image planner and AI image prompt engineer. Follow the Master Image Prompt System v6.0 exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
       const conciseContent = extractListicleHeadings(formattedArticle);
       
+      const { gender, ageRange } = extractGenderAndAge(keyword);
+      
       const buildBlogPartRequest = (imageRange, count) => templates.imagePromptSystem
         .replace('{blog_title}', blogTitle)
         .replace('{keyword}', keyword)
         .replace('{main_topic}', keyword)
-        .replace('{gender}', 'women')
-        .replace('{age_range}', 'over 50')
+        .replace('{gender}', gender)
+        .replace('{age_range}', ageRange)
         .replace('{content}', conciseContent)
         .replace('Write Images 1–10 in full using the FULL OUTPUT FORMAT for each.', '')
         .replace('After Image 10, stop. The system will send "NEXT PART."', '')
@@ -352,7 +384,7 @@ export async function generateContent({
           role: 'user',
           content: `give me 30 names of Hairstlye for my keyword "${keyword}"
 make all 30 h2 heading + give 140 words description for each Hairstyle. 
-use these keywords atelast 1 time one the whole content. just 1 would be enough.
+use these keywords atelast 1 time one the whole content: ${supportingKeywords || keyword}. just 1 would be enough.
 
 Format exactly as:
 ## [Hairstyle Name 1]

@@ -19,3 +19,6 @@ Thumbs.db
 scratch/
 temp_api.mjs
 *.log
+
+# Local Netlify folder
+.netlify
