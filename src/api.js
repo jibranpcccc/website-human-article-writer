@@ -131,7 +131,6 @@ export async function generateContent({
   mode,
   keyword,
   supportingKeywords,
-  renderProxyUrl,
   onProgress,
   onDraftUpdate,
   onReasoning
@@ -140,52 +139,28 @@ export async function generateContent({
     throw new Error('API Key is required to run generation.');
   }
 
-  // Normalize model name for OpenCode Big Pickle if passed as opencode/big-pickle
+  // Normalize model name for OpenCode Big Pickle
   const apiModel = model === 'opencode/big-pickle' ? 'big-pickle' : model;
 
-  // 1. SELECT API SETTINGS
+  // 1. SELECT API SETTINGS — all routed via Vite local proxy (vite.config.js)
   let baseUrl = '';
   let headers = { 'Content-Type': 'application/json' };
 
-  // Detect environment
-  const isProduction = import.meta.env.PROD;
-  const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
-  const usePhpProxy = isProduction && !isNetlify;
-  // Use Render proxy for OpenCode when a URL is provided (overrides all other routing)
-  const useRenderProxy = !!renderProxyUrl && provider === 'opencode';
-
-  if (useRenderProxy) {
-    // Route through user's Render.com proxy — no 26-second timeout
-    baseUrl = `${renderProxyUrl.replace(/\/$/, '')}/proxy?url=${encodeURIComponent('https://opencode.ai/zen/v1/chat/completions')}`;
-    headers['Authorization'] = `Bearer ${apiKey}`;
-  } else if (provider === 'gemini') {
-    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
-    baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : `/api-gemini/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
+  if (provider === 'gemini') {
+    baseUrl = `/api-gemini/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
   } else if (provider === 'openai') {
-    const targetUrl = 'https://api.openai.com/v1/chat/completions';
-    baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-openai/v1/chat/completions';
+    baseUrl = '/api-openai/v1/chat/completions';
     headers['Authorization'] = `Bearer ${apiKey}`;
   } else if (provider === 'opencode') {
-    const targetUrl = 'https://opencode.ai/zen/v1/chat/completions';
-    baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-opencode/zen/v1/chat/completions';
+    baseUrl = '/api-opencode/zen/v1/chat/completions';
     headers['Authorization'] = `Bearer ${apiKey}`;
   } else if (provider === 'mistral') {
-    const targetUrl = 'https://api.mistral.ai/v1/chat/completions';
-    baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-mistral/v1/chat/completions';
+    baseUrl = '/api-mistral/v1/chat/completions';
     headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
-  // Dynamic Image Prompt API Selection
-  const imageProvider = hasMistralKeys ? 'mistral' : 'opencode';
-  let imageBaseUrl = '';
-  
-  if (hasMistralKeys) {
-    const targetUrl = 'https://api.mistral.ai/v1/chat/completions';
-    imageBaseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-mistral/v1/chat/completions';
-  } else {
-    const targetUrl = 'https://opencode.ai/zen/v1/chat/completions';
-    imageBaseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-opencode/zen/v1/chat/completions';
-  }
+  // Dynamic Image Prompt API Selection — via Vite proxy
+  let imageBaseUrl = hasMistralKeys ? '/api-mistral/v1/chat/completions' : '/api-opencode/zen/v1/chat/completions';
 
   function getImageHeaders(keyIndex) {
     const key = hasMistralKeys ? getMistralKey(keyIndex) : apiKey;
