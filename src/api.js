@@ -146,22 +146,39 @@ export async function generateContent({
   let baseUrl = '';
   let headers = { 'Content-Type': 'application/json' };
 
+  // Detect environment
+  const isProduction = import.meta.env.PROD;
+  const isNetlify = typeof window !== 'undefined' && window.location.hostname.includes('netlify.app');
+  const usePhpProxy = isProduction && !isNetlify;
+
   if (provider === 'gemini') {
-    baseUrl = `/api-gemini/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
+    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
+    baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : `/api-gemini/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
   } else if (provider === 'openai') {
-    baseUrl = '/api-openai/v1/chat/completions';
+    const targetUrl = 'https://api.openai.com/v1/chat/completions';
+    baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-openai/v1/chat/completions';
     headers['Authorization'] = `Bearer ${apiKey}`;
   } else if (provider === 'opencode') {
-    baseUrl = '/api-opencode/zen/v1/chat/completions';
+    const targetUrl = 'https://opencode.ai/zen/v1/chat/completions';
+    baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-opencode/zen/v1/chat/completions';
     headers['Authorization'] = `Bearer ${apiKey}`;
   } else if (provider === 'mistral') {
-    baseUrl = '/api-mistral/v1/chat/completions';
+    const targetUrl = 'https://api.mistral.ai/v1/chat/completions';
+    baseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-mistral/v1/chat/completions';
     headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
   // Dynamic Image Prompt API Selection
   const imageProvider = hasMistralKeys ? 'mistral' : 'opencode';
-  const imageBaseUrl = hasMistralKeys ? '/api-mistral/v1/chat/completions' : '/api-opencode/zen/v1/chat/completions';
+  let imageBaseUrl = '';
+  
+  if (hasMistralKeys) {
+    const targetUrl = 'https://api.mistral.ai/v1/chat/completions';
+    imageBaseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-mistral/v1/chat/completions';
+  } else {
+    const targetUrl = 'https://opencode.ai/zen/v1/chat/completions';
+    imageBaseUrl = usePhpProxy ? `/proxy.php?url=${encodeURIComponent(targetUrl)}` : '/api-opencode/zen/v1/chat/completions';
+  }
 
   function getImageHeaders(keyIndex) {
     const key = hasMistralKeys ? getMistralKey(keyIndex) : apiKey;
