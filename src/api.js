@@ -177,7 +177,37 @@ export async function generateContent({
   let seoMeta = '';
 
   // 2. STAGE 1: ARTICLE GENERATION
-  if (mode === 'listicle') {
+  if (mode === 'quickTest') {
+    // ── Quick Test Mode — single call, ~400 words, fast model check ──
+    onProgress('Quick Test: Generating 400-word article...', 15);
+    const quickPrompt = `Write a 400-word blog article about "${keyword}".
+
+Requirements:
+- Natural, conversational tone
+- One H1 title at the top
+- 2-3 short H2 sections
+- No fluff, no filler
+- End with a one-sentence conclusion
+- Do NOT include any meta tags or notes
+
+Keyword: ${keyword}`;
+
+    finalArticleText = await callAPI({
+      provider,
+      baseUrl,
+      headers,
+      model: apiModel,
+      systemInstruction: 'You are a concise blog writer. Write exactly what is asked.',
+      messages: [{ role: 'user', content: quickPrompt }],
+      onReasoning: (text) => {
+        if (onReasoning) onReasoning(text, 'Quick Test Article');
+      }
+    });
+
+    if (onDraftUpdate) onDraftUpdate(finalArticleText);
+    onProgress('Quick test article done. Generating image prompts...', 65);
+
+  } else if (mode === 'listicle') {
     onProgress('Generating listicle content...', 15);
     const listiclePrompt = templates.listiclePrompt
       .replace('{keyword}', keyword)
@@ -283,43 +313,38 @@ export async function generateContent({
     onProgress('Stitching Part 1, 2, and 3...', 65);
   }
 
+  // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest mode)
+  let formattedArticle = finalArticleText;
+  if (mode !== 'quickTest') {
+    onProgress('Reformatting article structure (Applying Heading Making System)...', 75);
+    const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
+    formattedArticle = await callAPI({
+      provider,
+      baseUrl,
+      headers,
+      model: apiModel,
+      systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly.',
+      messages: [{ role: 'user', content: formattingPrompt }],
+      onReasoning: (text) => {
+        if (onReasoning) onReasoning(text, 'Pinterest Mobile Formatting');
+      }
+    });
+  }
 
-  // 3. STAGE 2: HEADING FORMATTER & PINTEREST RE-STRUCTURING
-  onProgress('Reformatting article structure (Applying Heading Making System)...', 75);
-  const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
-
-  const formattedArticle = await callAPI({
-    provider,
-    baseUrl,
-    headers,
-    model: apiModel,
-    systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly.',
-    messages: [{ role: 'user', content: formattingPrompt }],
-    onReasoning: (text) => {
-      if (onReasoning) onReasoning(text, 'Pinterest Mobile Formatting');
-    }
-  });
-
-  // Extract blog title from the formatted article H1
-  const articleLines = formattedArticle.split('\n');
-  const h1Line = articleLines.find(l => l.startsWith('# '));
-  const blogTitle = h1Line ? h1Line.replace(/^#\s+/, '').trim() : keyword;
+  // Image prompts use KEYWORD ONLY — completely independent of article content
+  const blogTitle = keyword;
+  const { gender, ageRange } = extractGenderAndAge(keyword);
 
   onProgress(`Generating Image Prompts in parallel — Article: ${apiModel} | Images: ${IMAGE_PROMPT_MODEL}...`, 80);
 
   // ============================================================
-  // IMAGE PROMPTS — both sets run in PARALLEL
-  // Model: mistral-large-latest (rotated keys) or mimo-v2.5-free (fallback)
-  // Parallelized into chunks of 5 to avoid token cutoffs and increase speed
+  // IMAGE PROMPTS — both sets run in PARALLEL, keyword-based only
   // ============================================================
   const [blogImagePrompts, pinterestImagePrompts] = await Promise.all([
 
     // BLOG POST IMAGE PROMPTS — 20 images, 4 parallel chunks (5 each)
     (async () => {
       const blogSysInstruction = 'You are an expert blog content image planner and AI image prompt engineer. Follow the Master Image Prompt System v6.0 exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
-      const conciseContent = extractListicleHeadings(formattedArticle);
-      
-      const { gender, ageRange } = extractGenderAndAge(keyword);
       
       const buildBlogPartRequest = (imageRange, count) => templates.imagePromptSystem
         .replace('{blog_title}', blogTitle)
@@ -327,7 +352,7 @@ export async function generateContent({
         .replace('{main_topic}', keyword)
         .replace('{gender}', gender)
         .replace('{age_range}', ageRange)
-        .replace('{content}', conciseContent)
+        .replace('{content}', `Keyword: ${keyword}\nGenerate image prompts that visually represent this hairstyle keyword. No article content needed — generate based on keyword meaning and hairstyle type only.`)
         .replace('Write Images 1–10 in full using the FULL OUTPUT FORMAT for each.', '')
         .replace('After Image 10, stop. The system will send "NEXT PART."', '')
         .replace('When you receive "NEXT PART", immediately write Images 11–20 in full.', '')
