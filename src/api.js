@@ -171,6 +171,125 @@ export async function generateContent({
     };
   }
 
+  // Image prompts use KEYWORD ONLY — completely independent of article content
+  const blogTitle = keyword;
+  const { gender, ageRange } = extractGenderAndAge(keyword);
+
+  // ── CONCURRENT BACKGROUND IMAGE PROMPT GENERATION ──
+  // Start image prompt generation concurrently right as article generation starts!
+  const blogImagePromptsPromise = (async () => {
+    const blogSysInstruction = 'You are an expert blog content image planner and AI image prompt engineer. Follow the Master Image Prompt System v6.0 exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
+    
+    const buildBlogPartRequest = (imageRange, count) => templates.imagePromptSystem
+      .replace('{blog_title}', blogTitle)
+      .replace('{keyword}', keyword)
+      .replace('{main_topic}', keyword)
+      .replace('{gender}', gender)
+      .replace('{age_range}', ageRange)
+      .replace('{content}', `Keyword: ${keyword}\nGenerate image prompts that visually represent this hairstyle keyword. No article content needed — generate based on keyword meaning and hairstyle type only.`)
+      .replace('Write Images 1–10 in full using the FULL OUTPUT FORMAT for each.', '')
+      .replace('After Image 10, stop. The system will send "NEXT PART."', '')
+      .replace('When you receive "NEXT PART", immediately write Images 11–20 in full.', '')
+      .replace('Do NOT repeat Image 1–10.', '')
+      .replace('Just continue from Image 11 to Image 20 in full format.', '')
+      .replace('Input context:', `YOUR TASK:\nGenerate image prompts for ${imageRange} ONLY.\nGenerate exactly ${count} image prompts. Do not go outside your assigned range.\nDo not repeat, re-introduce, or write outside your assigned range.\n\nInput context:`);
+
+    const blogChunksConfig = [
+      { range: 'Images 1–5', count: 5, keyIndex: 0 },
+      { range: 'Images 6–10', count: 5, keyIndex: 1 },
+      { range: 'Images 11–15', count: 5, keyIndex: 2 },
+      { range: 'Images 16–20', count: 5, keyIndex: 3 }
+    ];
+
+    const blogPartResults = await Promise.all(
+      blogChunksConfig.map(chunk =>
+        callAPI({
+          provider: imageProvider,
+          baseUrl: imageBaseUrl,
+          headers: getImageHeaders(chunk.keyIndex),
+          model: IMAGE_PROMPT_MODEL,
+          maxTokens: IMAGE_PROMPT_MAX_TOKENS,
+          systemInstruction: blogSysInstruction,
+          messages: [{ role: 'user', content: buildBlogPartRequest(chunk.range, chunk.count) }],
+          onReasoning: (text) => {
+            if (onReasoning) onReasoning(text, `Blog ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
+          }
+        })
+      )
+    );
+
+    return blogPartResults.join('\n\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  })();
+
+  const pinterestImagePromptsPromise = (async () => {
+    const pinterestSysInstruction = 'You are an expert Pinterest image planner and AI image prompt engineer for hairstyle blog content. Follow the system prompt exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
+
+    const hairstyleTopics = await callAPI({
+      provider: imageProvider,
+      baseUrl: imageBaseUrl,
+      headers: getImageHeaders(0),
+      model: IMAGE_PROMPT_MODEL,
+      maxTokens: 12000,
+      timeout: 300000,
+      systemInstruction: 'You are a hairstyle blog content planner. Follow the instructions exactly. Output ONLY what is requested.',
+      messages: [{
+        role: 'user',
+        content: `give me 30 names of Hairstlye for my keyword "${keyword}"
+make all 30 h2 heading + give 140 words description for each Hairstyle. 
+use these keywords atelast 1 time one the whole content: ${supportingKeywords || keyword}. just 1 would be enough.
+
+Format exactly as:
+## [Hairstyle Name 1]
+[140-word description]
+
+## [Hairstyle Name 2]
+[140-word description]
+
+Continue for all 30 hairstyles. Output ONLY the 30 headings and descriptions. Nothing else. No intro. No outro.`
+      }],
+      onReasoning: (text) => { if (onReasoning) onReasoning(text, `Pinterest: Generating 30 Hairstyle Topics [${IMAGE_PROMPT_MODEL}]`); }
+    });
+
+    const buildPartRequest = (imageRange, count) => templates.pinterestImagePromptSystem
+      .replace('{blog_title}', blogTitle)
+      .replace('{keyword}', keyword)
+      .replace('{image_range}', imageRange)
+      .replace('Generate exactly 10 image prompts', `Generate exactly ${count} image prompts`)
+      .replace('{hairstyle_content}', hairstyleTopics);
+
+    const chunksConfig = [
+      { range: 'Images 1–5', count: 5, keyIndex: 4 },
+      { range: 'Images 6–10', count: 5, keyIndex: 5 },
+      { range: 'Images 11–15', count: 5, keyIndex: 6 },
+      { range: 'Images 16–20', count: 5, keyIndex: 7 },
+      { range: 'Images 21–25', count: 5, keyIndex: 8 },
+      { range: 'Images 26–30', count: 5, keyIndex: 9 }
+    ];
+
+    const pinPartResults = await Promise.all(
+      chunksConfig.map(chunk =>
+        callAPI({
+          provider: imageProvider,
+          baseUrl: imageBaseUrl,
+          headers: getImageHeaders(chunk.keyIndex),
+          model: IMAGE_PROMPT_MODEL,
+          maxTokens: IMAGE_PROMPT_MAX_TOKENS,
+          systemInstruction: pinterestSysInstruction,
+          messages: [{ role: 'user', content: buildPartRequest(chunk.range, chunk.count) }],
+          onReasoning: (text) => {
+            if (onReasoning) onReasoning(text, `Pinterest ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
+          }
+        })
+      )
+    );
+
+    return pinPartResults.join('\n\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  })();
+
   let finalArticleText = '';
   let part1Text = '';
   let part2Text = '';
@@ -332,137 +451,11 @@ Keyword: ${keyword}`;
     });
   }
 
-  // Image prompts use KEYWORD ONLY — completely independent of article content
-  const blogTitle = keyword;
-  const { gender, ageRange } = extractGenderAndAge(keyword);
-
-  onProgress(`Generating Image Prompts in parallel — Article: ${apiModel} | Images: ${IMAGE_PROMPT_MODEL}...`, 80);
-
-  // ============================================================
-  // IMAGE PROMPTS — both sets run in PARALLEL, keyword-based only
-  // ============================================================
+  // Wait for background image generations to complete
+  onProgress('Awaiting parallel image prompts completion...', 85);
   const [blogImagePrompts, pinterestImagePrompts] = await Promise.all([
-
-    // BLOG POST IMAGE PROMPTS — 20 images, 4 parallel chunks (5 each)
-    (async () => {
-      const blogSysInstruction = 'You are an expert blog content image planner and AI image prompt engineer. Follow the Master Image Prompt System v6.0 exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
-      
-      const buildBlogPartRequest = (imageRange, count) => templates.imagePromptSystem
-        .replace('{blog_title}', blogTitle)
-        .replace('{keyword}', keyword)
-        .replace('{main_topic}', keyword)
-        .replace('{gender}', gender)
-        .replace('{age_range}', ageRange)
-        .replace('{content}', `Keyword: ${keyword}\nGenerate image prompts that visually represent this hairstyle keyword. No article content needed — generate based on keyword meaning and hairstyle type only.`)
-        .replace('Write Images 1–10 in full using the FULL OUTPUT FORMAT for each.', '')
-        .replace('After Image 10, stop. The system will send "NEXT PART."', '')
-        .replace('When you receive "NEXT PART", immediately write Images 11–20 in full.', '')
-        .replace('Do NOT repeat Image 1–10.', '')
-        .replace('Just continue from Image 11 to Image 20 in full format.', '')
-        .replace('Input context:', `YOUR TASK:\nGenerate image prompts for ${imageRange} ONLY.\nGenerate exactly ${count} image prompts. Do not go outside your assigned range.\nDo not repeat, re-introduce, or write outside your assigned range.\n\nInput context:`);
-
-      const blogChunksConfig = [
-        { range: 'Images 1–5', count: 5, keyIndex: 0 },
-        { range: 'Images 6–10', count: 5, keyIndex: 1 },
-        { range: 'Images 11–15', count: 5, keyIndex: 2 },
-        { range: 'Images 16–20', count: 5, keyIndex: 3 }
-      ];
-
-      const blogPartResults = await Promise.all(
-        blogChunksConfig.map(chunk =>
-          callAPI({
-            provider: imageProvider,
-            baseUrl: imageBaseUrl,
-            headers: getImageHeaders(chunk.keyIndex),
-            model: IMAGE_PROMPT_MODEL,
-            maxTokens: IMAGE_PROMPT_MAX_TOKENS,
-            systemInstruction: blogSysInstruction,
-            messages: [{ role: 'user', content: buildBlogPartRequest(chunk.range, chunk.count) }],
-            onReasoning: (text) => {
-              if (onReasoning) onReasoning(text, `Blog ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
-            }
-          })
-        )
-      );
-
-      return blogPartResults.join('\n\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-    })(),
-
-    // PINTEREST IMAGE PROMPTS — 30 images
-    // Architecture: 1 dedicated topics call → 6 parallel image calls of 5 prompts each
-    (async () => {
-      const pinterestSysInstruction = 'You are an expert Pinterest image planner and AI image prompt engineer for hairstyle blog content. Follow the system prompt exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
-
-      // ── Step 1: Generate 30 hairstyle H2 headings + 140-word descriptions ──────
-      // Dedicated focused call — nothing else in this call
-      const hairstyleTopics = await callAPI({
-        provider: imageProvider,
-        baseUrl: imageBaseUrl,
-        headers: getImageHeaders(0),
-        model: IMAGE_PROMPT_MODEL,
-        maxTokens: 12000,
-        timeout: 300000, // 5 minutes for 4,200 words output
-        systemInstruction: 'You are a hairstyle blog content planner. Follow the instructions exactly. Output ONLY what is requested.',
-        messages: [{
-          role: 'user',
-          content: `give me 30 names of Hairstlye for my keyword "${keyword}"
-make all 30 h2 heading + give 140 words description for each Hairstyle. 
-use these keywords atelast 1 time one the whole content: ${supportingKeywords || keyword}. just 1 would be enough.
-
-Format exactly as:
-## [Hairstyle Name 1]
-[140-word description]
-
-## [Hairstyle Name 2]
-[140-word description]
-
-Continue for all 30 hairstyles. Output ONLY the 30 headings and descriptions. Nothing else. No intro. No outro.`
-        }],
-        onReasoning: (text) => { if (onReasoning) onReasoning(text, `Pinterest: Generating 30 Hairstyle Topics [${IMAGE_PROMPT_MODEL}]`); }
-      });
-
-      // ── Step 2: Build the request for each chunk using the generated topics ──────
-      const buildPartRequest = (imageRange, count) => templates.pinterestImagePromptSystem
-        .replace('{blog_title}', blogTitle)
-        .replace('{keyword}', keyword)
-        .replace('{image_range}', imageRange)
-        .replace('Generate exactly 10 image prompts', `Generate exactly ${count} image prompts`)
-        .replace('{hairstyle_content}', hairstyleTopics);
-
-      // ── Step 3: Run all 6 chunks in PARALLEL using rotated keys ──────────────────
-      const chunksConfig = [
-        { range: 'Images 1–5', count: 5, keyIndex: 4 },
-        { range: 'Images 6–10', count: 5, keyIndex: 5 },
-        { range: 'Images 11–15', count: 5, keyIndex: 6 },
-        { range: 'Images 16–20', count: 5, keyIndex: 7 },
-        { range: 'Images 21–25', count: 5, keyIndex: 8 },
-        { range: 'Images 26–30', count: 5, keyIndex: 9 }
-      ];
-
-      const pinPartResults = await Promise.all(
-        chunksConfig.map(chunk =>
-          callAPI({
-            provider: imageProvider,
-            baseUrl: imageBaseUrl,
-            headers: getImageHeaders(chunk.keyIndex),
-            model: IMAGE_PROMPT_MODEL,
-            maxTokens: IMAGE_PROMPT_MAX_TOKENS,
-            systemInstruction: pinterestSysInstruction,
-            messages: [{ role: 'user', content: buildPartRequest(chunk.range, chunk.count) }],
-            onReasoning: (text) => {
-              if (onReasoning) onReasoning(text, `Pinterest ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
-            }
-          })
-        )
-      );
-
-      return pinPartResults.join('\n\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-    })()
-
+    blogImagePromptsPromise,
+    pinterestImagePromptsPromise
   ]);
 
   const result = {
