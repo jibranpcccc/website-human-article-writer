@@ -160,6 +160,7 @@ export async function generateContent({
   }
 
   // Dynamic Image Prompt API Selection — via Vite proxy
+  const imageProvider = hasMistralKeys ? 'mistral' : 'opencode';
   let imageBaseUrl = hasMistralKeys ? '/api-mistral/v1/chat/completions' : '/api-opencode/zen/v1/chat/completions';
 
   function getImageHeaders(keyIndex) {
