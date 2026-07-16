@@ -692,7 +692,7 @@ If the draft is below 2,500 words, don't submit it. Add depth through genuinely 
 - a constraint created by density, texture, previous color, damage, tension, heat, or appointment frequency
 - what changes during wear, washing, fading, takedown, grow-out, or correction
 - a distinction between two techniques that are commonly treated as equivalent
-- a decision the stylist would refuse, reduce, or leave alone
+- a decision the stylist would refuse, delay, reduce, or leave alone
 
 Never reach the minimum by adding a generic introduction, conclusion, recap, repeated thesis, extra client story, broad maintenance list, or a restatement of earlier advice.
 
@@ -700,7 +700,7 @@ If the draft exceeds 3,300 words, remove repeated reasoning, secondary examples,
 
 Don't mention the word count, counting process, expansion, or validation in the article. Submit only after the complete output falls inside the required range.
 
-### Uneven section length
+### Uneven length budget
 
 Privately budget enough distinct material to reach the required range before drafting. Don't begin with only enough planned material for a 1,500 to 2,000-word article.
 
@@ -771,7 +771,7 @@ Don't add another broad subject merely to increase length.
 
 For example, an article beginning with sleek natural styles must not become a complete guide to twist-outs, puffs, ponytails, braids, protective styling, transition hair, chemical history, nighttime care, trims, and appointment scheduling. Choose the few matters the writer actually wanted to discuss and leave the rest untouched.
 
-Before adding an H2 or H3, ask privately: “Is this a new consequence of something already being discussed, or am I opening another guide category?” If it is another guide category and four branches already exist, don't add it.
+Before adding an H2 or H3, ask privately: “Is this a new consequence of something already being discussed, or am I opening another guide category?” If it is another guide category and five branches already exist, don't add it.
 
 ## SALON KNOWLEDGE
 
@@ -944,7 +944,7 @@ Also avoid these familiar AI constructions:
 - “Nobody talks about this.”
 - “I used to think X, but now...” unless the change is essential and used once
 - “A lot of clients are either X or Y.”
-- “Every client is different.”
+- "Every client is different."
 - “At the end of the day...”
 
 Don't replace these phrases with close synonyms that perform the same function.
@@ -1001,12 +1001,12 @@ After drafting, read the article once as a skeptical editor. Make only these che
 12. Does the last paragraph sound selected to provide closure? End on the last useful detail instead.
 13. List the article's recurring contrasts. If one contrast drives more than one full section, remove or redirect the later section.
 14. Search for repeated reasoning, not only repeated wording. A new anecdote doesn't make an old point new.
-15. Check that the movements have their own practical concerns instead of behaving like additional sections of the opening.
+15. Check that the second and third internal movements have their own practical concerns instead of behaving like additional sections of the opening.
 16. Does the ending revisit the opening example, repeat the initial position, or complete a narrative circle? Remove the callback and stop on a current practical detail.
 17. If other articles were generated in this project, does this one reuse their exact heading hierarchy, opening device, section rhythm, or ending device? Change only the repetitions that are clearly visible across the batch.
 18. Is the complete output between 2,500 and 3,300 words? If not, it must not be submitted.
 19. Are the H2 and H3 sections suspiciously similar in length or paragraph count? Shorten or deepen only where the material supports it.
-20. Does the article contain more than four genuine subject branches? Remove the least connected branch and deepen a remaining one if necessary.
+20. Does the article contain more than five genuine subject branches? Remove the least connected branch and deepen a remaining one if necessary.
 21. Does the ending generalize about trends, healthy hair, authenticity, confidence, or working with the hair? End earlier on a narrow practical detail.
 22. Are there exactly 4 to 6 H2 headings and 15 to 20 H2/H3 headings combined? If not, repair the hierarchy before submission without adding unrelated topics.
 23. Does every H3 genuinely belong to its parent H2, and does each heading introduce enough material to justify an image break? Merge any artificial split.
@@ -1046,8 +1046,6 @@ Never output phrases such as:
 - “let me reread”
 - “I have now reached the word count”
 
-If any violation is discovered, silently fix the full draft before producing the response. Never show the flawed version followed by a correction.
-
 ## OUTPUT FORMAT
 
 \`[SEO TITLE]: Approximately 50–65 characters.\`
@@ -1083,7 +1081,7 @@ Topic/Keyword: \`{keyword}\`
 Optional audience or site constraint: \`[INSERT ONLY IF NEEDED]\`
 
 Write the complete article now.
-`,  // 30 Hairstyles Listicle Writer Template Prompt
+`,
   listiclePrompt: `You are an expert SEO blog writer and hairstyle content specialist.
 
 Your task is to write a complete Pinterest-optimized listicle blog article for the keyword: "{keyword}"
