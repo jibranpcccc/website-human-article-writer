@@ -7,7 +7,7 @@ const STATE = {
   apiKey: localStorage.getItem('apiKey') || 'sk-Bo7Hug0OdQiDgapjSsF9oONIlKeekaOZiIpdNFrdbDvvDYGSXo67NydYMqtgvU7N',
   provider: localStorage.getItem('provider') || 'opencode',
   model: localStorage.getItem('model') || 'big-pickle',
-  mode: localStorage.getItem('mode') || 'articleV86',
+  mode: localStorage.getItem('mode') || 'articleV10',
   keyword: '',
   supportingKeywords: '',
   activeWebsite: localStorage.getItem('activeWebsite') || '',
@@ -47,6 +47,7 @@ const DOM = {
   
   copyArticleBtn: document.getElementById('copy-article-btn'),
   downloadArticleBtn: document.getElementById('download-article-btn'),
+  downloadWordBtn: document.getElementById('download-word-btn'),
   
   copyBlogPromptsBtn: document.getElementById('copy-blog-prompts-btn'),
   copyRawBlogPromptsBtn: document.getElementById('copy-raw-blog-prompts-btn'),
@@ -54,7 +55,8 @@ const DOM = {
   copyRawPinterestPromptsBtn: document.getElementById('copy-raw-pinterest-prompts-btn'),
   
   historyList: document.getElementById('history-list'),
-  downloadAllBtn: document.getElementById('download-all-btn'),
+  downloadZipAllBtn: document.getElementById('download-zip-all-btn'),
+  downloadSequentialBtn: document.getElementById('download-sequential-btn'),
 
   // Visual Pipeline & live draft
   liveDraftPreview: document.getElementById('live-draft-preview'),
@@ -82,7 +84,14 @@ const DOM = {
   // Batch Queue Mappings
   cancelBatchBtn: document.getElementById('cancel-batch-btn'),
   batchQueueContainer: document.getElementById('batch-queue-container'),
-  batchQueueList: document.getElementById('batch-queue-list')
+  batchQueueList: document.getElementById('batch-queue-list'),
+  
+  // Timer & History Search/Stats elements
+  liveTimer: document.getElementById('live-timer'),
+  generationTimeValue: document.getElementById('generation-time-value'),
+  historySearchInput: document.getElementById('history-search-input'),
+  statsTotalArticles: document.getElementById('stats-total-articles'),
+  statsTotalWords: document.getElementById('stats-total-words')
 };
 
 // MODELS ROTATION BY PROVIDER
@@ -142,12 +151,17 @@ function init() {
   
   DOM.copyArticleBtn.addEventListener('click', copyArticle);
   DOM.downloadArticleBtn.addEventListener('click', downloadArticle);
+  DOM.downloadWordBtn.addEventListener('click', downloadWordDoc);
   document.getElementById('download-zip-btn').addEventListener('click', downloadZipPack);
   DOM.copyBlogPromptsBtn.addEventListener('click', () => copyPrompts('blog'));
   DOM.copyRawBlogPromptsBtn.addEventListener('click', () => copyRawPrompts('blog'));
   DOM.copyPinterestPromptsBtn.addEventListener('click', () => copyPrompts('pinterest'));
   DOM.copyRawPinterestPromptsBtn.addEventListener('click', () => copyRawPrompts('pinterest'));
-  DOM.downloadAllBtn.addEventListener('click', downloadAllHistory);
+  if (DOM.downloadZipAllBtn) DOM.downloadZipAllBtn.addEventListener('click', downloadAllHistoryAsZip);
+  if (DOM.downloadSequentialBtn) DOM.downloadSequentialBtn.addEventListener('click', downloadAllHistorySequential);
+  DOM.historySearchInput.addEventListener('input', () => {
+    renderHistory();
+  });
 
   DOM.cancelBatchBtn.addEventListener('click', () => {
     STATE.isBatchCancelled = true;
@@ -231,32 +245,64 @@ function downloadZipPack() {
     return;
   }
 
-  const keywordClean = STATE.keyword.replace(/\s+/g, '_').toLowerCase();
+  const cleanTitle = getCleanArticleTitle();
   const zip = new JSZip();
 
   // File 1: Article (Markdown)
-  zip.file(`${keywordClean}_article.md`, STATE.activeArticleMarkdown);
+  zip.file(`${cleanTitle}.md`, STATE.activeArticleMarkdown);
 
-  // File 2: Blog post prompts (Text)
-  zip.file(`${keywordClean}_blog_prompts.txt`, STATE.activeBlogPromptsMarkdown);
+  // File 2: Article (Word Document)
+  const htmlContent = marked.parse(STATE.activeArticleMarkdown);
+  const docHtml = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <title>${cleanTitle}</title>
+      <!--[if gte mso 9]>
+      <xml>
+        <w:WordDocument>
+          <w:View>Print</w:View>
+          <w:Zoom>100</w:Zoom>
+        </w:WordDocument>
+      </xml>
+      <![endif]-->
+      <style>
+        body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.6; color: #1e293b; padding: 1in; }
+        h1 { font-family: 'Georgia', serif; font-size: 24pt; font-weight: bold; color: #0f172a; margin-bottom: 12pt; }
+        h2 { font-family: 'Georgia', serif; font-size: 16pt; font-weight: bold; color: #1e293b; margin-top: 24pt; margin-bottom: 8pt; }
+        h3 { font-family: 'Georgia', serif; font-size: 13pt; font-weight: bold; color: #334155; margin-top: 18pt; margin-bottom: 6pt; }
+        p { margin-bottom: 10pt; text-align: justify; }
+        ul, ol { margin-bottom: 12pt; padding-left: 20pt; }
+        li { margin-bottom: 4pt; }
+        hr { border: 0; border-top: 1px solid #cbd5e1; margin: 24pt 0; }
+      </style>
+    </head>
+    <body>
+      ${htmlContent}
+    </body>
+    </html>
+  `;
+  zip.file(`${cleanTitle}.doc`, docHtml);
 
-  // File 3: Pinterest prompts (Text) - strictly 1 prompt per line, no newlines inside each prompt
+  // File 3: Blog post prompts (Text)
+  zip.file(`${cleanTitle} - Blog Post Image Prompts.txt`, STATE.activeBlogPromptsMarkdown);
+
+  // File 4: Pinterest prompts (Text) - strictly 1 prompt per line, no newlines inside each prompt
   const pinterestRawText = STATE.activeRawPinterestPromptsList
     .map(p => p.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim())
     .join('\n');
-  zip.file(`${keywordClean}_pinterest_prompts.txt`, pinterestRawText);
+  zip.file(`${cleanTitle} - Pinterest Image Prompts.txt`, pinterestRawText);
 
-  // File 4: SEO Metadata (Text)
+  // File 5: SEO Metadata (Text)
   const seoTitleText = DOM.seoTitlePreview.textContent || STATE.keyword;
   const seoDescText = DOM.seoDescPreview.textContent || '';
   const seoMetaFileContent = `SEO Title: ${seoTitleText}\nMeta Description: ${seoDescText}\n`;
-  zip.file(`${keywordClean}_seo_meta.txt`, seoMetaFileContent);
+  zip.file(`${cleanTitle} - SEO Meta Details.txt`, seoMetaFileContent);
 
   zip.generateAsync({ type: 'blob' }).then(function(content) {
     const url = URL.createObjectURL(content);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${keywordClean}_content_pack.zip`;
+    a.download = `${cleanTitle}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -311,6 +357,41 @@ function toggleSupportingKeywords() {
   } else {
     DOM.supportingKeywordsGroup.style.display = 'none';
   }
+}
+
+// TIMER HELPERS FOR GENERATION TIME LOGS
+let liveTimerInterval = null;
+let liveTimerSeconds = 0;
+
+function startLiveTimer() {
+  if (DOM.liveTimer) {
+    DOM.liveTimer.style.display = 'inline-block';
+    DOM.liveTimer.textContent = '00:00';
+  }
+  liveTimerSeconds = 0;
+  clearInterval(liveTimerInterval);
+  liveTimerInterval = setInterval(() => {
+    liveTimerSeconds++;
+    const mins = Math.floor(liveTimerSeconds / 60);
+    const secs = liveTimerSeconds % 60;
+    const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    if (DOM.liveTimer) DOM.liveTimer.textContent = formatted;
+  }, 1000);
+}
+
+function stopLiveTimer() {
+  clearInterval(liveTimerInterval);
+  if (DOM.liveTimer) DOM.liveTimer.style.display = 'none';
+}
+
+function formatDuration(totalSeconds) {
+  if (!totalSeconds) return 'N/A';
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}m ${secs}s`;
 }
 
 // GENERATION TRIGGER
@@ -395,6 +476,7 @@ async function handleGenerate() {
       DOM.resultsTabs.parentNode.insertBefore(banner, DOM.resultsTabs);
     }
     
+    startLiveTimer();
     resetPipelineVisuals();
     updateProgress(`Starting generation for "${currentKeyword}"...`, 5);
 
@@ -423,17 +505,22 @@ async function handleGenerate() {
         }
       });
 
+      stopLiveTimer();
+      const elapsedSeconds = liveTimerSeconds;
+      if (DOM.generationTimeValue) DOM.generationTimeValue.textContent = formatDuration(elapsedSeconds);
+
       // Render results
       renderResults(result);
 
-      // Save to history list
-      saveToHistory(result);
+      // Save to history list with duration
+      saveToHistory(result, elapsedSeconds);
 
       // Update queue item to completed
       updateQueueItemVisual(i, 'completed', 'Done ✓');
       successCount++;
 
     } catch (err) {
+      stopLiveTimer();
       console.error(err);
       logProgress(`Failed to generate "${currentKeyword}": ${err.message}`, 'error');
       updateQueueItemVisual(i, 'failed', 'Failed ✗');
@@ -567,8 +654,8 @@ function renderImagePrompts(rawPromptsText, targetType) {
   // Parse prompts out of the structured output
   const cardsHtml = [];
   
-  // Split sections by double newlines or "Image Number:" markers
-  const sections = rawPromptsText.split(/Image Number:\s*/i);
+  // Split sections by "prompt [number]:" or "prompt:" or "prompt [Image Number]:"
+  const sections = rawPromptsText.split(/(?:^|\n)prompt\s*\[?[^:\n\d]*\d*\]?\s*:\s*/i);
   
   if (sections.length <= 1) {
     // Fallback if formatting was different
@@ -583,40 +670,27 @@ function renderImagePrompts(rawPromptsText, targetType) {
     return;
   }
 
-  // The first section is usually the Content Profile or intro content
-  const contentProfile = sections[0].trim();
-  if (contentProfile) {
-    cardsHtml.push(`
-      <div class="image-prompt-card" style="border-left: 3px solid var(--primary)">
-        <div class="image-prompt-header">
-          <span class="image-prompt-number">CONTENT PROFILE</span>
-        </div>
-        <div class="image-prompt-body" style="font-family: inherit; font-size: 0.85rem;">
-          ${contentProfile.replace(/\n/g, '<br>')}
-        </div>
-      </div>
-    `);
-  }
-
   // Iterate over each parsed image card
   for (let i = 1; i < sections.length; i++) {
     const rawCard = sections[i].trim();
     if (!rawCard) continue;
 
-    // Parse subheaders
-    const headingMatch = rawCard.match(/Use Under Heading:\s*([^\n]+)/i);
-    const exactHairstyleMatch = rawCard.match(/Exact Hairstyle:\s*([^\n]+)/i);
-    const ageMatch = rawCard.match(/Subject Age:\s*([^\n]+)/i);
-    const ethnicityMatch = rawCard.match(/Assigned Ethnicity:\s*([^\n]+)/i);
-    const promptMatch = rawCard.match(/Full Prompt:\s*([\s\S]+?)(?=Negative Prompt:|$)/i);
-    const negativeMatch = rawCard.match(/Negative Prompt:\s*([\s\S]+?)$/i);
-
-    const heading = headingMatch ? headingMatch[1].trim() : 'General Section';
-    const hairstyle = exactHairstyleMatch ? exactHairstyleMatch[1].trim() : 'Exact Hairstyle';
-    const age = ageMatch ? ageMatch[1].trim() : '';
-    const ethnicity = ethnicityMatch ? ethnicityMatch[1].trim() : '';
-    const prompt = promptMatch ? promptMatch[1].trim() : '';
+    // Parse prompt and negative prompt
+    const negativeMatch = rawCard.match(/Negative Prompt:\s*([\s\S]+)$/i);
+    const prompt = negativeMatch ? rawCard.slice(0, rawCard.indexOf(negativeMatch[0])).trim() : rawCard;
     const negativePrompt = negativeMatch ? negativeMatch[1].trim() : '';
+
+    // Extract exact hairstyle from the prompt content if possible
+    let hairstyle = 'Hairstyle Details';
+    const hairStyleMatch = prompt.match(/showing a \d+-year-old [^\s]+ woman with ([^,\.]+)/i) || 
+                           prompt.match(/showing a [^\s]+ with ([^,\.]+)/i) || 
+                           prompt.match(/showing ([^,\.]+)/i);
+    if (hairStyleMatch) {
+      hairstyle = hairStyleMatch[1].trim();
+    }
+    if (hairstyle.length > 30) {
+      hairstyle = hairstyle.slice(0, 30) + '...';
+    }
 
     if (prompt) {
       if (targetType === 'pinterest') {
@@ -634,11 +708,11 @@ function renderImagePrompts(rawPromptsText, targetType) {
           <span class="image-prompt-number">Image ${i}</span>
           <span class="badge badge-primary">${hairstyle}</span>
         </div>
-        <div class="image-prompt-meta">
-          <strong>Heading:</strong> ${heading} <br/>
-          <strong>Details:</strong> Age ${age} • ${ethnicity}
+        <div class="image-prompt-meta" style="font-size: 0.82rem; margin-top: 8px;">
+          <div style="margin-bottom: 8px;"><strong>Full Prompt:</strong> <span style="color: var(--text-secondary);">${prompt}</span></div>
+          <div><strong>Negative Prompt:</strong> <span style="color: var(--text-muted); font-size: 0.78rem;">${negativePrompt}</span></div>
         </div>
-        <div class="image-prompt-body" id="prompt-text-${targetType}-${i}">${rawCard.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+        <div class="image-prompt-body" id="prompt-text-${targetType}-${i}" style="display: none;">${prompt} Negative Prompt: ${negativePrompt}</div>
         
         <!-- Live Image Preview Box -->
         <div class="image-preview-container" id="preview-container-${targetType}-${i}" style="display: none; margin-top: 12px; border-radius: var(--radius-sm); overflow: hidden; background-color: var(--bg-primary); border: 1px solid var(--border-color); aspect-ratio: 3/4; position: relative;">
@@ -678,16 +752,87 @@ function copyArticle() {
   alert('Article copied to clipboard in Markdown format!');
 }
 
+function getCleanArticleTitle() {
+  let title = '';
+  // Try parsing from the SEO Title Preview first
+  if (DOM.seoTitlePreview && DOM.seoTitlePreview.textContent) {
+    title = DOM.seoTitlePreview.textContent.trim();
+  }
+  
+  // If not available, try parsing the first # line of the markdown
+  if (!title && STATE.activeArticleMarkdown) {
+    const firstLine = STATE.activeArticleMarkdown.split('\n')[0] || '';
+    if (firstLine.startsWith('# ')) {
+      title = firstLine.substring(2).trim();
+    }
+  }
+  
+  // Fallback to keyword
+  if (!title) {
+    title = STATE.keyword || 'article';
+  }
+
+  // Remove invalid filename characters on Windows/OS: \ / : * ? " < > | [ ]
+  return title.replace(/[\\/:*?"<>|\[\]]/g, '').trim();
+}
+
 function downloadArticle() {
   if (!STATE.activeArticleMarkdown) {
     alert('No article available to download.');
     return;
   }
+  const cleanTitle = getCleanArticleTitle();
   const blob = new Blob([STATE.activeArticleMarkdown], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${STATE.keyword.replace(/\s+/g, '_')}_article.md`;
+  a.download = `${cleanTitle}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadWordDoc() {
+  if (!STATE.activeArticleMarkdown) {
+    alert('No article available to download.');
+    return;
+  }
+  const cleanTitle = getCleanArticleTitle();
+  const htmlContent = marked.parse(STATE.activeArticleMarkdown);
+  const docHtml = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <title>${cleanTitle}</title>
+      <!--[if gte mso 9]>
+      <xml>
+        <w:WordDocument>
+          <w:View>Print</w:View>
+          <w:Zoom>100</w:Zoom>
+        </w:WordDocument>
+      </xml>
+      <![endif]-->
+      <style>
+        body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.6; color: #1e293b; padding: 1in; }
+        h1 { font-family: 'Georgia', serif; font-size: 24pt; font-weight: bold; color: #0f172a; margin-bottom: 12pt; }
+        h2 { font-family: 'Georgia', serif; font-size: 16pt; font-weight: bold; color: #1e293b; margin-top: 24pt; margin-bottom: 8pt; }
+        h3 { font-family: 'Georgia', serif; font-size: 13pt; font-weight: bold; color: #334155; margin-top: 18pt; margin-bottom: 6pt; }
+        p { margin-bottom: 10pt; text-align: justify; }
+        ul, ol { margin-bottom: 12pt; padding-left: 20pt; }
+        li { margin-bottom: 4pt; }
+        hr { border: 0; border-top: 1px solid #cbd5e1; margin: 24pt 0; }
+      </style>
+    </head>
+    <body>
+      ${htmlContent}
+    </body>
+    </html>
+  `;
+  const blob = new Blob([docHtml], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${cleanTitle}.doc`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -779,7 +924,7 @@ function copyRawPrompts(targetType) {
 
 
 // HISTORY LOGGING
-function saveToHistory(result) {
+function saveToHistory(result, durationSeconds = 0) {
   const words = result.formattedArticle.split(/\s+/).filter(w => w.length > 0).length;
 
   const newEntry = {
@@ -788,35 +933,59 @@ function saveToHistory(result) {
     mode: result.mode || STATE.mode,
     date: new Date().toLocaleDateString(),
     wordCount: words,
+    rawArticle: result.rawArticle || '',
     formattedArticle: result.formattedArticle,
     blogImagePrompts: result.blogImagePrompts || result.imagePrompts || '',
-    pinterestImagePrompts: result.pinterestImagePrompts || ''
+    pinterestImagePrompts: result.pinterestImagePrompts || '',
+    seoMeta: result.seoMeta || '',
+    duration: durationSeconds
   };
 
   STATE.history.unshift(newEntry);
-  if (STATE.history.length > 10) STATE.history.pop();
   localStorage.setItem(`generation_history_${STATE.activeWebsite}`, JSON.stringify(STATE.history));
   renderHistory();
 }
 
 function renderHistory() {
+  // Update overall stats based on full history list
+  const totalArticles = STATE.history.length;
+  const totalWords = STATE.history.reduce((sum, item) => sum + (item.wordCount || 0), 0);
+  if (DOM.statsTotalArticles) DOM.statsTotalArticles.textContent = totalArticles;
+  if (DOM.statsTotalWords) DOM.statsTotalWords.textContent = totalWords.toLocaleString();
+
   if (STATE.history.length === 0) {
-    DOM.downloadAllBtn.style.display = 'none';
+    if (DOM.downloadZipAllBtn) DOM.downloadZipAllBtn.style.display = 'none';
+    if (DOM.downloadSequentialBtn) DOM.downloadSequentialBtn.style.display = 'none';
     DOM.historyList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 16px;">No saved articles yet.</div>';
     return;
   }
 
-  DOM.downloadAllBtn.style.display = 'block';
+  if (DOM.downloadZipAllBtn) DOM.downloadZipAllBtn.style.display = 'block';
+  if (DOM.downloadSequentialBtn) DOM.downloadSequentialBtn.style.display = 'block';
 
-  DOM.historyList.innerHTML = STATE.history.map(item => `
+  // Apply search query filter
+  const searchQuery = (DOM.historySearchInput ? DOM.historySearchInput.value : '').toLowerCase().trim();
+  const filteredHistory = STATE.history.filter(item => item.keyword.toLowerCase().includes(searchQuery));
+
+  if (filteredHistory.length === 0) {
+    DOM.historyList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 16px;">No matching articles.</div>';
+    return;
+  }
+
+  DOM.historyList.innerHTML = filteredHistory.map(item => `
     <div class="history-item" data-id="${item.id}" title="Click to load this article" style="cursor: pointer;">
       <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%;">
         <div style="flex: 1; min-width: 0;">
           <span class="title" style="display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: 600; font-size: 0.82rem;">${item.keyword}</span>
           <div class="meta" style="display: flex; gap: 5px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
-            <span class="badge badge-secondary" style="font-size: 0.55rem; padding: 2px 5px;">${item.mode === 'listicle' ? '📋 Listicle' : '✍️ Human'}</span>
+            <span class="badge badge-secondary" style="font-size: 0.55rem; padding: 2px 5px;">${item.mode === 'quickTest' ? '⚡ Test' : item.mode === 'listicle' ? '📋 List' : '✍️ Human'}</span>
             <span style="font-size: 0.65rem; color: var(--text-muted);">${item.date}</span>
             <span style="font-size: 0.65rem; color: var(--text-muted);">• ${item.wordCount ? item.wordCount.toLocaleString() : '0'} words</span>
+            ${item.duration ? `
+              <span class="badge" style="font-size: 0.55rem; padding: 2px 5px; background-color: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.2); color: #34d399; font-family: monospace;">
+                <i class="far fa-clock"></i> ${formatDuration(item.duration)}
+              </span>
+            ` : ''}
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
@@ -839,12 +1008,28 @@ function renderHistory() {
       const entry = STATE.history.find(h => h.id === id);
       if (entry) {
         DOM.keywordInput.value = entry.keyword;
+        
+        // Render results tab
         renderResults({
+          rawArticle: entry.rawArticle || '',
           formattedArticle: entry.formattedArticle,
-          blogImagePrompts: entry.blogImagePrompts || entry.imagePrompts || '',
+          blogImagePrompts: entry.blogImagePrompts || '',
           pinterestImagePrompts: entry.pinterestImagePrompts || '',
+          seoMeta: entry.seoMeta || '',
           mode: entry.mode
         });
+
+        // Set duration stats badge
+        const badge = document.getElementById('generation-stats-badge');
+        const badgeValue = document.getElementById('generation-time-value');
+        if (badge && badgeValue) {
+          if (entry.duration) {
+            badge.style.display = 'flex';
+            badgeValue.textContent = formatDuration(entry.duration);
+          } else {
+            badge.style.display = 'none';
+          }
+        }
       }
     });
   });
@@ -967,28 +1152,221 @@ window.switchResultTab = function(tabName) {
   }
 };
 
-function downloadAllHistory() {
+function getCleanEntryTitle(entry) {
+  let title = '';
+  if (entry.seoMeta) {
+    const titleMatch = entry.seoMeta.match(/SEO Title:\s*([^\n\r]+)/i);
+    if (titleMatch) {
+      title = titleMatch[1].trim();
+    }
+  }
+  if (!title && entry.formattedArticle) {
+    const firstLine = entry.formattedArticle.split('\n')[0] || '';
+    if (firstLine.startsWith('# ')) {
+      title = firstLine.substring(2).trim();
+    }
+  }
+  if (!title) {
+    title = entry.keyword || 'article';
+  }
+  return title.replace(/[\\/:*?"<>|\[\]]/g, '').trim();
+}
+
+function downloadAllHistoryAsZip() {
   if (STATE.history.length === 0) {
     alert('No articles saved to compile.');
     return;
   }
-  
-  // Combine all articles in history separated by dividers
-  const combinedMarkdown = STATE.history
-    .map(entry => {
-      return `# BATCH ITEM: ${entry.keyword.toUpperCase()}\nDate: ${entry.date}\nWord Count: ${entry.wordCount || 0}\n\n${entry.formattedArticle}\n\n---\n\n### BLOG POST IMAGE PROMPTS (20 images)\n\n${entry.blogImagePrompts || entry.imagePrompts || ''}\n\n---\n\n### PINTEREST IMAGE PROMPTS (30 images)\n\n${entry.pinterestImagePrompts || ''}`;
-    })
-    .join('\n\n\n==================================================\n\n\n');
 
-  const blob = new Blob([combinedMarkdown], { type: 'text/markdown' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `batch_articles_export_${Date.now()}.md`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const zip = new JSZip();
+
+  STATE.history.forEach(entry => {
+    const cleanTitle = getCleanEntryTitle(entry);
+    const folder = zip.folder(cleanTitle);
+
+    // File 1: Markdown (.md)
+    folder.file(`${cleanTitle}.md`, entry.formattedArticle);
+
+    // File 2: Word Document (.doc) - with CSS styled typography and margins
+    const htmlContent = marked.parse(entry.formattedArticle);
+    const docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <title>${cleanTitle}</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.6; color: #1e293b; padding: 1in; }
+          h1 { font-family: 'Georgia', serif; font-size: 24pt; font-weight: bold; color: #0f172a; margin-bottom: 12pt; }
+          h2 { font-family: 'Georgia', serif; font-size: 16pt; font-weight: bold; color: #1e293b; margin-top: 24pt; margin-bottom: 8pt; }
+          h3 { font-family: 'Georgia', serif; font-size: 13pt; font-weight: bold; color: #334155; margin-top: 18pt; margin-bottom: 6pt; }
+          p { margin-bottom: 10pt; text-align: justify; }
+          ul, ol { margin-bottom: 12pt; padding-left: 20pt; }
+          li { margin-bottom: 4pt; }
+          hr { border: 0; border-top: 1px solid #cbd5e1; margin: 24pt 0; }
+        </style>
+      </head>
+      <body>
+        ${htmlContent}
+      </body>
+      </html>
+    `;
+    folder.file(`${cleanTitle}.doc`, docHtml);
+
+    // File 3: Blog post prompts (Text)
+    folder.file(`${cleanTitle} - Blog Post Image Prompts.txt`, entry.blogImagePrompts || '');
+
+    // File 4: Pinterest prompts (Text) - strictly 1 prompt per line, no newlines inside each prompt
+    let rawPinterestList = [];
+    if (entry.pinterestImagePrompts) {
+      const sections = entry.pinterestImagePrompts.split(/(?:^|\n)prompt\s*\[?[^:\n\d]*\d*\]?\s*:\s*/i);
+      for (let i = 1; i < sections.length; i++) {
+        const rawCard = sections[i].trim();
+        if (!rawCard) continue;
+        const negativeMatch = rawCard.match(/Negative Prompt:\s*([\s\S]+)$/i);
+        const prompt = negativeMatch ? rawCard.slice(0, rawCard.indexOf(negativeMatch[0])).trim() : rawCard;
+        if (prompt) {
+          rawPinterestList.push(prompt);
+        }
+      }
+    }
+    const pinterestRawText = rawPinterestList
+      .map(p => p.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim())
+      .join('\n');
+    folder.file(`${cleanTitle} - Pinterest Image Prompts.txt`, pinterestRawText);
+
+    // File 5: SEO Metadata (Text)
+    let seoTitleText = entry.keyword;
+    let seoDescText = '';
+    if (entry.seoMeta) {
+      const titleMatch = entry.seoMeta.match(/SEO Title:\s*([^\n\r]+)/i);
+      if (titleMatch) seoTitleText = titleMatch[1].trim();
+      const descMatch = entry.seoMeta.match(/Meta Description:\s*([\s\S]+)$/i);
+      if (descMatch) seoDescText = descMatch[1].trim();
+    }
+    const seoMetaFileContent = `SEO Title: ${seoTitleText}\nMeta Description: ${seoDescText}\n`;
+    folder.file(`${cleanTitle} - SEO Meta Details.txt`, seoMetaFileContent);
+  });
+
+  zip.generateAsync({ type: 'blob' }).then(function(content) {
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `All_Articles_Backup_${Date.now()}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showCopyToast('All saved articles backup ZIP downloaded successfully!');
+  });
+}
+
+async function downloadAllHistorySequential() {
+  if (STATE.history.length === 0) {
+    alert('No articles saved to download.');
+    return;
+  }
+
+  if (!confirm(`This will trigger ${STATE.history.length} separate ZIP downloads. Please make sure to allow multiple file downloads if prompted by your browser. Do you want to proceed?`)) {
+    return;
+  }
+
+  for (let idx = 0; idx < STATE.history.length; idx++) {
+    const entry = STATE.history[idx];
+    const cleanTitle = getCleanEntryTitle(entry);
+    
+    const zip = new JSZip();
+
+    // File 1: Markdown (.md)
+    zip.file(`${cleanTitle}.md`, entry.formattedArticle);
+
+    // File 2: Word Document (.doc) - with CSS styled typography and margins
+    const htmlContent = marked.parse(entry.formattedArticle);
+    const docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <title>${cleanTitle}</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.6; color: #1e293b; padding: 1in; }
+          h1 { font-family: 'Georgia', serif; font-size: 24pt; font-weight: bold; color: #0f172a; margin-bottom: 12pt; }
+          h2 { font-family: 'Georgia', serif; font-size: 16pt; font-weight: bold; color: #1e293b; margin-top: 24pt; margin-bottom: 8pt; }
+          h3 { font-family: 'Georgia', serif; font-size: 13pt; font-weight: bold; color: #334155; margin-top: 18pt; margin-bottom: 6pt; }
+          p { margin-bottom: 10pt; text-align: justify; }
+          ul, ol { margin-bottom: 12pt; padding-left: 20pt; }
+          li { margin-bottom: 4pt; }
+          hr { border: 0; border-top: 1px solid #cbd5e1; margin: 24pt 0; }
+        </style>
+      </head>
+      <body>
+        ${htmlContent}
+      </body>
+      </html>
+    `;
+    zip.file(`${cleanTitle}.doc`, docHtml);
+
+    // File 3: Blog post prompts (Text)
+    zip.file(`${cleanTitle} - Blog Post Image Prompts.txt`, entry.blogImagePrompts || '');
+
+    // File 4: Pinterest prompts (Text) - strictly 1 prompt per line, no newlines inside each prompt
+    let rawPinterestList = [];
+    if (entry.pinterestImagePrompts) {
+      const sections = entry.pinterestImagePrompts.split(/(?:^|\n)prompt\s*\[?[^:\n\d]*\d*\]?\s*:\s*/i);
+      for (let i = 1; i < sections.length; i++) {
+        const rawCard = sections[i].trim();
+        if (!rawCard) continue;
+        const negativeMatch = rawCard.match(/Negative Prompt:\s*([\s\S]+)$/i);
+        const prompt = negativeMatch ? rawCard.slice(0, rawCard.indexOf(negativeMatch[0])).trim() : rawCard;
+        if (prompt) {
+          rawPinterestList.push(prompt);
+        }
+      }
+    }
+    const pinterestRawText = rawPinterestList
+      .map(p => p.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim())
+      .join('\n');
+    zip.file(`${cleanTitle} - Pinterest Image Prompts.txt`, pinterestRawText);
+
+    // File 5: SEO Metadata (Text)
+    let seoTitleText = entry.keyword;
+    let seoDescText = '';
+    if (entry.seoMeta) {
+      const titleMatch = entry.seoMeta.match(/SEO Title:\s*([^\n\r]+)/i);
+      if (titleMatch) seoTitleText = titleMatch[1].trim();
+      const descMatch = entry.seoMeta.match(/Meta Description:\s*([\s\S]+)$/i);
+      if (descMatch) seoDescText = descMatch[1].trim();
+    }
+    const seoMetaFileContent = `SEO Title: ${seoTitleText}\nMeta Description: ${seoDescText}\n`;
+    zip.file(`${cleanTitle} - SEO Meta Details.txt`, seoMetaFileContent);
+
+    // Generate and trigger download
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${cleanTitle}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Sleep for 350ms to ensure browser starts each download successfully
+    await new Promise(resolve => setTimeout(resolve, 350));
+  }
+  showCopyToast('All individual ZIP packs downloaded sequentially!');
 }
 
 function updateQueueItemVisual(index, state, statusText) {

@@ -224,32 +224,21 @@ export async function generateContent({
   })();
 
   const pinterestImagePromptsPromise = (async () => {
-    const pinterestSysInstruction = 'You are an expert Pinterest image planner and AI image prompt engineer for hairstyle blog content. Follow the system prompt exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
+    const pinterestSysInstruction = 'You are an expert Pinterest image planner and AI image prompt engineer. Generate extremely high-quality, rich, detailed candid portrait image prompts of 75-110 words focusing on the hairstyle. ABSOLUTELY NO SELFIES or references to holding phones/mirror shots. Streamline the output: ONLY output one-line prompts in the requested format. Never include blueprints, content profiles, intro, or outro.';
 
     const hairstyleTopics = await callAPI({
       provider: imageProvider,
       baseUrl: imageBaseUrl,
       headers: getImageHeaders(0),
       model: IMAGE_PROMPT_MODEL,
-      maxTokens: 12000,
-      timeout: 300000,
-      systemInstruction: 'You are a hairstyle blog content planner. Follow the instructions exactly. Output ONLY what is requested.',
+      maxTokens: 1000,
+      systemInstruction: 'You are a helpful assistant. Output ONLY a clean numbered list of 30 hairstyle names.',
       messages: [{
         role: 'user',
-        content: `give me 30 names of Hairstlye for my keyword "${keyword}"
-make all 30 h2 heading + give 140 words description for each Hairstyle. 
-use these keywords atelast 1 time one the whole content: ${supportingKeywords || keyword}. just 1 would be enough.
-
-Format exactly as:
-## [Hairstyle Name 1]
-[140-word description]
-
-## [Hairstyle Name 2]
-[140-word description]
-
-Continue for all 30 hairstyles. Output ONLY the 30 headings and descriptions. Nothing else. No intro. No outro.`
+        content: `Give me a clean numbered list of exactly 30 distinct, beautiful, modern hairstyle names for the keyword "${keyword}".
+Do NOT write any descriptions, introductions, or other text. Just output the numbered list.`
       }],
-      onReasoning: (text) => { if (onReasoning) onReasoning(text, `Pinterest: Generating 30 Hairstyle Topics [${IMAGE_PROMPT_MODEL}]`); }
+      onReasoning: (text) => { if (onReasoning) onReasoning(text, `Pinterest: Generating 30 Hairstyle Names [${IMAGE_PROMPT_MODEL}]`); }
     });
 
     const buildPartRequest = (imageRange, count) => templates.pinterestImagePromptSystem
@@ -351,6 +340,32 @@ Keyword: ${keyword}`;
     finalArticleText = finalArticleText.replace(/\[META\]:.*?\n/gi, '').trim();
 
     if (onDraftUpdate) onDraftUpdate(finalArticleText);
+
+  } else if (mode === 'articleV10') {
+    onProgress('Generating human article in one go (Version 10.0)...', 15);
+    const systemInstruction = "You are a professional hairstylist with 15 years experience. You write in a casual, direct, opinionated, and authentic tone. Follow your instructions precisely.";
+    
+    const v10Prompt = templates.articleV10.replace('{keyword}', keyword);
+
+    finalArticleText = await callAPI({
+      provider,
+      baseUrl,
+      headers,
+      model: apiModel,
+      systemInstruction,
+      messages: [{ role: 'user', content: v10Prompt }],
+      onReasoning: (text) => {
+        if (onReasoning) onReasoning(text, 'Human Article V10 Drafting');
+      }
+    });
+
+    // Extract META description
+    const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
+    seoMeta = metaMatch ? metaMatch[1].trim() : '';
+    finalArticleText = finalArticleText.replace(/\[META\]:.*?\n/gi, '').trim();
+
+    if (onDraftUpdate) onDraftUpdate(finalArticleText);
+    onProgress('Draft completed. Preparing for heading formatter...', 65);
 
   } else {
     // Sequential 3-Part Generation for Anti-Skeleton V8.6

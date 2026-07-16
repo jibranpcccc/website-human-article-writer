@@ -87,7 +87,8 @@
         <div class="form-group">
           <label for="mode-select">Article Mode</label>
           <select id="mode-select">
-            <option value="articleV86" selected>Anti-Skeleton V8.6 (Human Style) — Default</option>
+            <option value="articleV10" selected>Human Writer V10.0 (One Go) — Default</option>
+            <option value="articleV86">Anti-Skeleton V8.6 (Human Style)</option>
             <option value="listicle">30 Hairstyle Listicle Writer</option>
             <option value="quickTest">⚡ Quick Test (400 words) — Fast Model Check</option>
           </select>
@@ -97,15 +98,31 @@
       <div style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; margin-top: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <h3 class="section-title" style="margin: 0;">Saved Articles</h3>
-          <div style="display: flex; gap: 5px;">
-            <button id="download-all-btn" class="btn btn-secondary" style="width: auto; padding: 4px 8px; font-size: 0.65rem; margin: 0; background-color: rgba(255,255,255,0.03); display: none;" title="Download all saved articles as one combined Markdown file">
-              <i class="fas fa-file-archive"></i> Combine
+          <div style="display: flex; gap: 4px;">
+            <button id="download-zip-all-btn" class="btn btn-secondary" style="width: auto; padding: 4px 6px; font-size: 0.62rem; margin: 0; background-color: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); color: #a5b4fc; display: none;" title="Download all history articles in a single combined ZIP file">
+              <i class="fas fa-file-archive"></i> ZIP All
             </button>
-            <button onclick="window.clearAllHistory()" class="btn btn-secondary" style="width: auto; padding: 4px 8px; font-size: 0.65rem; margin: 0; background-color: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.25); color: #f87171;" title="Delete all saved articles">
-              <i class="fas fa-trash"></i> Clear All
+            <button id="download-sequential-btn" class="btn btn-secondary" style="width: auto; padding: 4px 6px; font-size: 0.62rem; margin: 0; background-color: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #34d399; display: none;" title="Download all history articles one-by-one sequentially">
+              <i class="fas fa-cloud-download-alt"></i> One-by-One
+            </button>
+            <button onclick="window.clearAllHistory()" class="btn btn-secondary" style="width: auto; padding: 4px 6px; font-size: 0.62rem; margin: 0; background-color: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.25); color: #f87171;" title="Delete all saved articles">
+              <i class="fas fa-trash"></i> Clear
             </button>
           </div>
         </div>
+
+        <!-- Search and Stats Row -->
+        <div style="margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="position: relative;">
+            <input type="text" id="history-search-input" placeholder="Search keywords..." style="width: 100%; font-size: 0.72rem; padding: 6px 10px 6px 26px; border: 1px solid var(--border-color); border-radius: 6px; background-color: rgba(0,0,0,0.2); color: var(--text-primary);" autocomplete="off">
+            <i class="fas fa-search" style="position: absolute; left: 8px; top: 9px; font-size: 0.7rem; color: var(--text-muted);"></i>
+          </div>
+          <div id="history-stats-bar" style="font-size: 0.68rem; color: var(--text-muted); display: flex; justify-content: space-between; padding: 2px 4px;">
+            <span>Total: <strong id="stats-total-articles" style="color: var(--text-secondary);">0</strong></span>
+            <span>Words: <strong id="stats-total-words" style="color: var(--text-secondary);">0</strong></span>
+          </div>
+        </div>
+
         <div class="history-list" id="history-list">
           <!-- Filled dynamically by main.js -->
         </div>
@@ -150,8 +167,11 @@
 
       <!-- LIVE PROGRESS PANEL -->
       <section class="glass-panel progress-panel" id="progress-panel" style="display: none; flex-direction: column; gap: 20px;">
-        <div class="panel-header" style="margin: 0; border: none; padding-bottom: 8px; justify-content: space-between; align-items: center; display: flex;">
-          <h3 id="progress-status" style="margin: 0;">0% - Preparing pipeline...</h3>
+         <div class="panel-header" style="margin: 0; border: none; padding-bottom: 8px; justify-content: space-between; align-items: center; display: flex;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <h3 id="progress-status" style="margin: 0;">0% - Preparing pipeline...</h3>
+            <span id="live-timer" style="font-family: monospace; font-size: 0.75rem; background-color: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); color: var(--primary); padding: 2px 8px; border-radius: 4px; display: none; font-weight: 600;">00:00</span>
+          </div>
           <button id="cancel-batch-btn" class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem; display: none; background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #f87171; margin: 0;">
             <i class="fas fa-ban"></i> Cancel Batch
           </button>
@@ -228,7 +248,7 @@
       </section>
 
       <!-- RESULTS TABS -->
-      <div class="results-tabs" id="results-tabs" style="display: none;">
+      <div class="results-tabs" id="results-tabs" style="display: none; align-items: center;">
         <button class="tab-btn active" id="tab-article-btn" onclick="window.switchResultTab('article')">
           <i class="fas fa-file-alt"></i> Article &amp; SEO Details
         </button>
@@ -238,6 +258,13 @@
         <button class="tab-btn" id="tab-pinterest-prompts-btn" onclick="window.switchResultTab('pinterest-prompts')">
           <i class="fab fa-pinterest"></i> Pinterest Image Prompts
         </button>
+        
+        <!-- Live Generation Time Stat Badge -->
+        <div id="generation-stats-badge" style="font-size: 0.72rem; background-color: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2); color: #34d399; padding: 4px 10px; border-radius: 6px; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-left: 12px;">
+          <i class="far fa-clock"></i>
+          <span>Time: <strong id="generation-time-value" style="font-family: monospace;">0s</strong></span>
+        </div>
+
         <div style="margin-left: auto;">
           <button onclick="window.clearCurrentResults()" class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem; margin: 0; background-color: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: #f87171;" title="Clear current results and start fresh">
             <i class="fas fa-broom"></i> Clear Results
@@ -281,6 +308,9 @@
                 </button>
                 <button class="btn btn-secondary" id="download-article-btn" style="padding: 6px 12px; font-size: 0.8rem; width: auto; margin: 0;">
                   <i class="fas fa-download"></i> Download MD
+                </button>
+                <button class="btn btn-secondary" id="download-word-btn" style="padding: 6px 12px; font-size: 0.8rem; width: auto; margin: 0;">
+                  <i class="fas fa-file-word"></i> Download Word
                 </button>
               </div>
             </div>
