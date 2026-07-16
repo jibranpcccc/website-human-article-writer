@@ -341,11 +341,46 @@ Keyword: ${keyword}`;
 
     if (onDraftUpdate) onDraftUpdate(finalArticleText);
 
-  } else if (mode === 'articleV10') {
-    onProgress('Generating human article in one go (Version 10.0)...', 15);
+  } else if (mode === 'articleV11') {
+    onProgress('Generating initial draft (Version 11.0)...', 15);
     const systemInstruction = "You are a professional hairstylist with 15 years experience. You write in a casual, direct, opinionated, and authentic tone. Follow your instructions precisely.";
     
-    const v10Prompt = templates.articleV10.replace('{keyword}', keyword);
+    const v11Prompt = templates.articleV11.replace('{keyword}', keyword);
+
+    const draftText = await callAPI({
+      provider,
+      baseUrl,
+      headers,
+      model: apiModel,
+      systemInstruction,
+      messages: [{ role: 'user', content: v11Prompt }],
+      onReasoning: (text) => {
+        if (onReasoning) onReasoning(text, 'V11.0 Initial Draft Generation');
+      }
+    });
+
+    if (onDraftUpdate) onDraftUpdate(draftText);
+    onProgress('Verifying and rewriting full article (Applying Version 11.0 rules)...', 45);
+
+    const verificationPrompt = `You are a meticulous hairstyle editor and working stylist. You must review the draft below and rewrite it to correct any mistakes, strictly adhering to the following instructions:
+
+RULES TO VERIFY & CORRECT:
+1. Required range: 2,500 to 3,300 words. (Under 2,500 is strictly invalid; do not summarize, add depth to technical details or constraints to hit the minimum word count).
+2. The heading hierarchy: exactly 4 to 6 H2 headings, and enough H3 headings to create 15 to 20 visible headings in total. Ensure no orphan H3s.
+3. No AI terms or transition words (such as: perfect, ideal, dive, delve, embark, unlock, discover, revolutionize, game-changer, tapestry, illuminate, unveil, pivotal, intricate, realm, leverage, harness, navigate, groundbreaking, cutting-edge, meticulous, comprehensive, furthermore, moreover, in conclusion, in today's world, ever-evolving, transformative, uncover, foster, facilitate, stunning, incredible, powerful, journey, here's the thing, the catch, good news).
+4. No clichés or AI constructions (like "It's not just X, it's Y", "From X to Y", "At the end of the day", etc.).
+5. Check ending: The final section must not summarize, restate the main opinion, or give a polished/philosophical takeaway. It must stop on a narrow practical salon/styling detail.
+6. Check format: The response must only contain:
+   [SEO TITLE]: ...
+   [SLUG]: ...
+   [META]: ...
+   # H1 Title ...
+   ## H2 / ### H3 and body content.
+
+DRAFT TO REVIEW:
+${draftText}
+
+Verify the draft, list the corrections/improvements needed internally, and then write the entire updated article fully in the required format. Output only the updated article content.`;
 
     finalArticleText = await callAPI({
       provider,
@@ -353,45 +388,25 @@ Keyword: ${keyword}`;
       headers,
       model: apiModel,
       systemInstruction,
-      messages: [{ role: 'user', content: v10Prompt }],
+      messages: [{ role: 'user', content: verificationPrompt }],
       onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'Human Article V10 Drafting');
+        if (onReasoning) onReasoning(text, 'V11.0 Critic & Rewrite Pass');
       }
     });
 
     // Extract META description
     const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
     seoMeta = metaMatch ? metaMatch[1].trim() : '';
-    finalArticleText = finalArticleText.replace(/\[META\]:.*?\n/gi, '').trim();
-
-    if (onDraftUpdate) onDraftUpdate(finalArticleText);
-    onProgress('Draft completed. Preparing for heading formatter...', 65);
-
-  } else if (mode === 'articleV106') {
-    onProgress('Generating human article in one go (Version 10.6)...', 15);
-    const systemInstruction = "You are a professional hairstylist with 15 years experience. You write in a casual, direct, opinionated, and authentic tone. Follow your instructions precisely.";
     
-    const v106Prompt = templates.articleV106.replace('{keyword}', keyword);
-
-    finalArticleText = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction,
-      messages: [{ role: 'user', content: v106Prompt }],
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'Human Article V10.6 Drafting');
-      }
-    });
-
-    // Extract META description
-    const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
-    seoMeta = metaMatch ? metaMatch[1].trim() : '';
-    finalArticleText = finalArticleText.replace(/\[META\]:.*?\n/gi, '').trim();
+    // Strip metadata blocks from visible article text
+    finalArticleText = finalArticleText
+      .replace(/\[SEO TITLE\]:.*?\n/gi, '')
+      .replace(/\[SLUG\]:.*?\n/gi, '')
+      .replace(/\[META\]:.*?\n/gi, '')
+      .trim();
 
     if (onDraftUpdate) onDraftUpdate(finalArticleText);
-    onProgress('Draft completed. Preparing for heading formatter...', 65);
+    onProgress('Verification and rewrite complete.', 70);
 
   } else {
     // Sequential 3-Part Generation for Anti-Skeleton V8.6
@@ -476,7 +491,7 @@ Keyword: ${keyword}`;
 
   // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest mode)
   let formattedArticle = finalArticleText;
-  if (mode !== 'quickTest') {
+  if (mode !== 'quickTest' && mode !== 'articleV11') {
     onProgress('Reformatting article structure (Applying Heading Making System)...', 75);
     const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
     formattedArticle = await callAPI({

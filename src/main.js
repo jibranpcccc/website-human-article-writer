@@ -7,7 +7,7 @@ const STATE = {
   apiKey: localStorage.getItem('apiKey') || 'sk-Bo7Hug0OdQiDgapjSsF9oONIlKeekaOZiIpdNFrdbDvvDYGSXo67NydYMqtgvU7N',
   provider: localStorage.getItem('provider') || 'opencode',
   model: localStorage.getItem('model') || 'big-pickle',
-  mode: localStorage.getItem('mode') || 'articleV106',
+  mode: localStorage.getItem('mode') || 'articleV11',
   keyword: '',
   supportingKeywords: '',
   activeWebsite: localStorage.getItem('activeWebsite') || '',
