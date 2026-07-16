@@ -22,7 +22,7 @@ const STATE = {
 };
 
 // Validate mode selection to prevent stale values from older versions
-const VALID_MODES = ['articleV15', 'articleV86', 'listicle', 'quickTest'];
+const VALID_MODES = ['articleV15', 'articleV86', 'listicle', 'quickTest', 'imageOnly'];
 if (!VALID_MODES.includes(STATE.mode)) {
   STATE.mode = 'articleV15';
   localStorage.setItem('mode', 'articleV15');
@@ -617,24 +617,21 @@ function renderResults(result) {
   DOM.resultsContainer.style.display = 'grid';
   DOM.resultsTabs.style.display = 'flex';
 
-  // Always show all 3 tabs
+  // Always show image tabs
   DOM.tabBlogPromptsBtn.style.display = 'block';
   DOM.tabPinterestPromptsBtn.style.display = 'block';
 
   // Save raw markdown values in STATE
-  STATE.activeArticleMarkdown = result.formattedArticle;
+  STATE.activeArticleMarkdown = result.formattedArticle || '';
   STATE.activeBlogPromptsMarkdown = result.blogImagePrompts || result.imagePrompts || '';
   STATE.activePinterestPromptsMarkdown = result.pinterestImagePrompts || '';
-
-  // Default to Article tab
-  switchResultTab('article');
 
   // Render both prompt sets
   renderImagePrompts(STATE.activeBlogPromptsMarkdown, 'blog');
   renderImagePrompts(STATE.activePinterestPromptsMarkdown, 'pinterest');
 
   // Parse SEO Title (H1) and Meta Description
-  let cleanArticle = result.formattedArticle;
+  let cleanArticle = result.formattedArticle || '';
   let metaDesc = result.seoMeta || `Explore the best options and ideas for ${STATE.keyword}. Practical tips from a real stylist's perspective.`;
   let seoTitle = `${STATE.keyword}`;
 
@@ -643,10 +640,20 @@ function renderResults(result) {
 
   DOM.seoTitlePreview.textContent = seoTitle;
   DOM.seoDescPreview.textContent = metaDesc;
-  DOM.seoMetaCard.style.display = 'flex';
+
+  // Mode-specific layout visibility
+  if (result.mode === 'imageOnly') {
+    DOM.tabArticleBtn.style.display = 'none';
+    DOM.seoMetaCard.style.display = 'none';
+    switchResultTab('blog-prompts');
+  } else {
+    DOM.tabArticleBtn.style.display = 'block';
+    DOM.seoMetaCard.style.display = 'flex';
+    switchResultTab('article');
+  }
 
   // Render Formatted Article
-  DOM.articleBody.innerHTML = marked.parse(cleanArticle);
+  DOM.articleBody.innerHTML = cleanArticle ? marked.parse(cleanArticle) : '';
 }
 
 

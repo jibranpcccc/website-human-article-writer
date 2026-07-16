@@ -296,7 +296,11 @@ Do NOT write any descriptions, introductions, or other text. Just output the num
   let seoMeta = '';
 
   // 2. STAGE 1: ARTICLE GENERATION
-  if (mode === 'quickTest') {
+  if (mode === 'imageOnly') {
+    onProgress('Image Prompts Mode: Skipping article writing...', 15);
+    finalArticleText = '';
+    seoMeta = `Image prompts only`;
+  } else if (mode === 'quickTest') {
     // ── Quick Test Mode — single call, ~400 words, fast model check ──
     onProgress('Quick Test: Generating 400-word article...', 15);
     const quickPrompt = `Write a 400-word blog article about "${keyword}".
@@ -515,7 +519,7 @@ Keyword: ${keyword}`;
 
   // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest and articleV15 modes)
   let formattedArticle = finalArticleText;
-  if (mode !== 'quickTest' && mode !== 'articleV15') {
+  if (mode !== 'quickTest' && mode !== 'articleV15' && mode !== 'imageOnly') {
     onProgress('Reformatting article structure (Applying Heading Making System)...', 75);
     const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
     formattedArticle = await callAPI({
