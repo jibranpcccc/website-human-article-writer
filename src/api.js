@@ -367,6 +367,32 @@ Keyword: ${keyword}`;
     if (onDraftUpdate) onDraftUpdate(finalArticleText);
     onProgress('Draft completed. Preparing for heading formatter...', 65);
 
+  } else if (mode === 'articleV104') {
+    onProgress('Generating human article in one go (Version 10.4)...', 15);
+    const systemInstruction = "You are a professional hairstylist with 15 years experience. You write in a casual, direct, opinionated, and authentic tone. Follow your instructions precisely.";
+    
+    const v104Prompt = templates.articleV104.replace('{keyword}', keyword);
+
+    finalArticleText = await callAPI({
+      provider,
+      baseUrl,
+      headers,
+      model: apiModel,
+      systemInstruction,
+      messages: [{ role: 'user', content: v104Prompt }],
+      onReasoning: (text) => {
+        if (onReasoning) onReasoning(text, 'Human Article V10.4 Drafting');
+      }
+    });
+
+    // Extract META description
+    const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
+    seoMeta = metaMatch ? metaMatch[1].trim() : '';
+    finalArticleText = finalArticleText.replace(/\[META\]:.*?\n/gi, '').trim();
+
+    if (onDraftUpdate) onDraftUpdate(finalArticleText);
+    onProgress('Draft completed. Preparing for heading formatter...', 65);
+
   } else {
     // Sequential 3-Part Generation for Anti-Skeleton V8.6
     onProgress('Running Voice Seed Setup & Generating Part 1...', 10);
