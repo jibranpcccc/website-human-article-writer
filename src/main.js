@@ -21,6 +21,13 @@ const STATE = {
   isBatchCancelled: false
 };
 
+// Validate mode selection to prevent stale values from older versions
+const VALID_MODES = ['articleV11', 'articleV86', 'listicle', 'quickTest'];
+if (!VALID_MODES.includes(STATE.mode)) {
+  STATE.mode = 'articleV11';
+  localStorage.setItem('mode', 'articleV11');
+}
+
 // DOM ELEMENTS
 const DOM = {
   themeToggle: document.getElementById('theme-toggle'),
