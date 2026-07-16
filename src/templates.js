@@ -876,8 +876,8 @@ Topic/Keyword: {keyword}
 Write the complete article now.
 `,
 
-  // Human Writer Master Prompt — Final Consolidated Version 10.4
-  articleV104: `# HUMAN WRITER MASTER PROMPT — FINAL CONSOLIDATED VERSION 10.4
+  // Human Writer Master Prompt — Pinterest Gallery Tested Final Version 10.6
+  articleV106: `# HUMAN WRITER MASTER PROMPT — PINTEREST GALLERY TESTED FINAL VERSION 10.6
 
 ## PURPOSE
 
@@ -922,7 +922,7 @@ Write the complete article in one response. Never stop for “Next Part,” ask 
 
 - Required range: 2,500 to 3,300 words, including headings and meta description.
 - Preferred range: 2,700 to 3,050 words.
-- Use one SEO title, one suggested slug, one meta description, one H1, and 6 to 10 H2 headings.
+- Use one SEO title, one suggested slug, one meta description, one H1, approximately 5 to 7 H2 headings, and enough H3 headings to create 15 to 20 visible headings in total.
 - Don't provide an outline, planning notes, analysis, or word-count commentary.
 - Don't add weak sections to reach the minimum. Develop a new technical consequence or practical constraint instead.
 - Never exceed 3,300 words.
@@ -954,10 +954,10 @@ Privately budget enough distinct material to reach the required range before dra
 
 Section length must follow importance rather than a repeated template:
 
-- allow one or two shorter H2 sections
+- allow several shorter gallery-supporting H3 sections
 - allow two sections to receive substantially more attention
 - let the remaining sections fall naturally between them
-- don't give every H2 the same number of paragraphs
+- don't give every H2 or H3 the same number of paragraphs
 - don't make every section approximately 300 words
 - don't expand every section equally when the draft is short
 
@@ -993,7 +993,7 @@ Don't open with a broad claim about aging, confidence, beauty, self-expression, 
 
 Follow the writer's actual line of attention. A section may contain an observation, decision, explanation, memory, complaint, or unanswered question, but no category is compulsory.
 
-Use no more than five real subject branches across the complete article, even if there are more H2 headings. A heading may narrow, continue, or interrupt a branch rather than introduce another item in a guide.
+Use no more than five real subject branches across the complete article, even when there are 15 to 20 visible H2 and H3 headings. A heading may narrow, continue, complicate, or interrupt a branch rather than introduce another item in a guide.
 
 Once the central point has been made clearly, don't state it again in new wording. Add a consequence, exception, technical distinction, mistake, or different concern. If a paragraph only reinforces something already established, delete it.
 
@@ -1005,7 +1005,7 @@ No section needs a takeaway. Don't attach advice to an observation merely becaus
 
 Reaching 2,500 words does not authorize covering every related hairstyle, technique, maintenance category, texture group, or client type.
 
-Use no more than five real subject branches across the complete article. Several H2 headings may continue one branch through a different stage, consequence, correction, or limitation. An H2 heading does not automatically need to introduce another category.
+Use no more than five real subject branches across the complete article. Several H3 headings may continue one H2 branch through a different stage, consequence, correction, or limitation. A visible heading does not automatically introduce another category.
 
 When the draft is short, deepen existing material through:
 
@@ -1021,7 +1021,7 @@ Don't add another broad subject merely to increase length.
 
 For example, an article beginning with sleek natural styles must not become a complete guide to twist-outs, puffs, ponytails, braids, protective styling, transition hair, chemical history, nighttime care, trims, and appointment scheduling. Choose the few matters the writer actually wanted to discuss and leave the rest untouched.
 
-Before adding an H2, ask privately: “Is this a new consequence of something already being discussed, or am I opening another guide category?” If it is another guide category and five branches already exist, don't add it.
+Before adding an H2 or H3, ask privately: “Is this a new consequence of something already being discussed, or am I opening another guide category?” If it is another guide category and five branches already exist, don't add it.
 
 ## SALON KNOWLEDGE
 
@@ -1100,12 +1100,43 @@ Roughness is permitted. Manufactured roughness isn't.
 ## HEADINGS
 
 - Use one H1 at the top only.
-- Use 6 to 10 short H2 headings across the complete article. Choose the number from the material rather than defaulting to eight.
+- Use approximately 5 to 7 H2 headings for the article's main subject branches.
+- Use enough H3 headings beneath those H2 sections to create approximately 15 to 20 visible headings in total.
+- H2 headings identify major branches. H3 headings narrow, continue, complicate, or show a consequence of their parent H2.
+- A new H3 must not open an unrelated category merely to create another image position.
+- Count H2 and H3 headings before submission. The combined total must be 15 to 20, with 5 to 7 H2 headings.
+- Every H3 must sit beneath a relevant H2. Never use an orphan H3 or insert a heading halfway through one continuous anecdote merely to reach the count.
 - Headings should be plain labels for what follows.
 - Don't number headings.
-- Don't use a heading from an earlier part.
 - Avoid “The X Problem,” “Why I Keep Seeing X,” questions written as hooks, and headings designed to sound like magazine copy.
 - Don't force every heading to target a separate search query.
+- Don't repeat the same heading wording across articles in a batch.
+
+The heading hierarchy should behave like this:
+
+\`## Density and the Shape of the Cut\`
+
+\`### Where the Crown Has Less Support\`
+
+\`### Why the Sides May Need More Weight\`
+
+\`### What Heavy Layering Removes\`
+
+The H3 headings above develop one density branch. They aren't three new guide categories.
+
+Avoid a flat sequence such as density, pixie cuts, bobs, gray hair, color, shampoo, brushes, and appointment scheduling. That creates a complete guide instead of developing a specific article.
+
+Section lengths must vary:
+
+- A gallery-supporting H3 section may contain approximately 100 to 170 words.
+- A standard section may contain approximately 180 to 280 words.
+- One or two important anchor sections may contain approximately 300 to 450 words across their H2 introduction and related H3 subsections.
+- These are flexible ranges, not quotas.
+- Don't give every heading exactly one paragraph.
+- Don't give every section the same word count.
+- Don't make every heading end with advice, a lesson, or a takeaway.
+
+The article will later contain approximately 20 Pinterest images in gallery blocks. Create natural insertion points through the heading hierarchy, but don't output image prompts, gallery labels, captions, placement instructions, or placeholders unless the user explicitly asks for them.
 
 ## KEYWORD AND SEO
 
@@ -1126,7 +1157,7 @@ When generating more than one article in the same project, don't reuse a house s
 
 Across consecutive articles, vary naturally:
 
-- the number of H2 headings within the permitted range
+- the total heading count and H2/H3 balance within the permitted range
 - which movement receives the most space
 - whether the opening begins with a process, disagreement, product result, or client constraint
 - whether an anecdote appears early, late, or not at all
@@ -1216,11 +1247,13 @@ After drafting, read the article once as a skeptical editor. Make only these che
 14. Search for repeated reasoning, not only repeated wording. A new anecdote doesn't make an old point new.
 15. Check that the second and third internal movements have their own practical concerns instead of behaving like additional sections of the opening.
 16. Does the ending revisit the opening example, repeat the initial position, or complete a narrative circle? Remove the callback and stop on a current practical detail.
-17. If other articles were generated in this project, does this one reuse their heading count, opening device, section rhythm, or ending device? Change only the repetitions that are clearly visible across the batch.
+17. If other articles were generated in this project, does this one reuse their exact heading hierarchy, opening device, section rhythm, or ending device? Change only the repetitions that are clearly visible across the batch.
 18. Is the complete output between 2,500 and 3,300 words? If not, it must not be submitted.
-19. Are the H2 sections suspiciously similar in length or paragraph count? Shorten or deepen only where the material supports it.
+19. Are the H2 and H3 sections suspiciously similar in length or paragraph count? Shorten or deepen only where the material supports it.
 20. Does the article contain more than five genuine subject branches? Remove the least connected branch and deepen a remaining one if necessary.
 21. Does the ending generalize about trends, healthy hair, authenticity, confidence, or working with the hair? End earlier on a narrow practical detail.
+22. Are there exactly 5 to 7 H2 headings and 15 to 20 H2/H3 headings combined? If not, repair the hierarchy before submission without adding unrelated topics.
+23. Does every H3 genuinely belong to its parent H2, and does each heading introduce enough material to justify an image break? Merge any artificial split.
 
 Don't run a second “humanization pass.” Repeated rewriting for randomness usually makes the artifice more visible.
 

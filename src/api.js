@@ -367,11 +367,11 @@ Keyword: ${keyword}`;
     if (onDraftUpdate) onDraftUpdate(finalArticleText);
     onProgress('Draft completed. Preparing for heading formatter...', 65);
 
-  } else if (mode === 'articleV104') {
-    onProgress('Generating human article in one go (Version 10.4)...', 15);
+  } else if (mode === 'articleV106') {
+    onProgress('Generating human article in one go (Version 10.6)...', 15);
     const systemInstruction = "You are a professional hairstylist with 15 years experience. You write in a casual, direct, opinionated, and authentic tone. Follow your instructions precisely.";
     
-    const v104Prompt = templates.articleV104.replace('{keyword}', keyword);
+    const v106Prompt = templates.articleV106.replace('{keyword}', keyword);
 
     finalArticleText = await callAPI({
       provider,
@@ -379,9 +379,9 @@ Keyword: ${keyword}`;
       headers,
       model: apiModel,
       systemInstruction,
-      messages: [{ role: 'user', content: v104Prompt }],
+      messages: [{ role: 'user', content: v106Prompt }],
       onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'Human Article V10.4 Drafting');
+        if (onReasoning) onReasoning(text, 'Human Article V10.6 Drafting');
       }
     });
 
