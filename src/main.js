@@ -987,14 +987,28 @@ function renderHistory() {
   }
 
   DOM.historyList.innerHTML = filteredHistory.map(item => `
-    <div class="history-item" data-id="${item.id}" title="Click to load this article" style="cursor: pointer;">
+    <div class="history-item ${item.mode === 'imageOnly' ? 'image-only-item' : ''}" data-id="${item.id}" title="Click to load this article" style="cursor: pointer;">
       <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%;">
         <div style="flex: 1; min-width: 0;">
           <span class="title" style="display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: 600; font-size: 0.82rem;">${item.keyword}</span>
           <div class="meta" style="display: flex; gap: 5px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
-            <span class="badge badge-secondary" style="font-size: 0.55rem; padding: 2px 5px;">${item.mode === 'quickTest' ? '⚡ Test' : item.mode === 'listicle' ? '📋 List' : '✍️ Human'}</span>
+            <span class="badge" style="font-size: 0.55rem; padding: 2px 5px; ${
+              item.mode === 'quickTest' ? 'background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;' :
+              item.mode === 'listicle' ? 'background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fde047;' :
+              item.mode === 'imageOnly' ? 'background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); color: #c084fc;' :
+              'background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7;'
+            }">${
+              item.mode === 'quickTest' ? '⚡ Test' :
+              item.mode === 'listicle' ? '📋 List' :
+              item.mode === 'imageOnly' ? '🎨 Images' :
+              '✍️ Human'
+            }</span>
             <span style="font-size: 0.65rem; color: var(--text-muted);">${item.date}</span>
-            <span style="font-size: 0.65rem; color: var(--text-muted);">• ${item.wordCount ? item.wordCount.toLocaleString() : '0'} words</span>
+            ${item.mode === 'imageOnly' ? `
+              <span style="font-size: 0.65rem; color: var(--text-muted);">• Prompts Only</span>
+            ` : `
+              <span style="font-size: 0.65rem; color: var(--text-muted);">• ${item.wordCount ? item.wordCount.toLocaleString() : '0'} words</span>
+            `}
             ${item.duration ? `
               <span class="badge" style="font-size: 0.55rem; padding: 2px 5px; background-color: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.2); color: #34d399; font-family: monospace;">
                 <i class="far fa-clock"></i> ${formatDuration(item.duration)}
@@ -1154,14 +1168,21 @@ window.switchResultTab = function(tabName) {
   DOM.tabBlogPromptsBtn.classList.remove('active');
   DOM.tabPinterestPromptsBtn.classList.remove('active');
   
+  DOM.tabBlogPromptsBtn.classList.remove('image-only-active');
+  DOM.tabPinterestPromptsBtn.classList.remove('image-only-active');
+
+  const isImageOnly = (STATE.activeArticleMarkdown === '' && STATE.activeBlogPromptsMarkdown !== '');
+  
   if (tabName === 'article') {
     DOM.tabArticleBtn.classList.add('active');
     DOM.articleTabView.style.display = 'flex';
   } else if (tabName === 'blog-prompts') {
     DOM.tabBlogPromptsBtn.classList.add('active');
+    if (isImageOnly) DOM.tabBlogPromptsBtn.classList.add('image-only-active');
     DOM.blogPromptsTabView.style.display = 'flex';
   } else if (tabName === 'pinterest-prompts') {
     DOM.tabPinterestPromptsBtn.classList.add('active');
+    if (isImageOnly) DOM.tabPinterestPromptsBtn.classList.add('image-only-active');
     DOM.pinterestPromptsTabView.style.display = 'flex';
   }
 };

@@ -648,9 +648,16 @@ async function callAPI({ provider, baseUrl, headers, model, systemInstruction, m
 
         let response;
         try {
+          const requestHeaders = { ...headers };
+          if (provider === 'mistral' && MISTRAL_KEYS.length > 0) {
+            const randomIndex = Math.floor(Math.random() * MISTRAL_KEYS.length);
+            const key = MISTRAL_KEYS[randomIndex];
+            requestHeaders['Authorization'] = `Bearer ${key}`;
+          }
+
           response = await fetch(baseUrl, {
             method: 'POST',
-            headers,
+            headers: requestHeaders,
             body: JSON.stringify(body),
             signal: controller.signal
           });

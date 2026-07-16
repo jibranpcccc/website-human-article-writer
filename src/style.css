@@ -545,6 +545,23 @@ main {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.history-item.image-only-item {
+  border-left: 3px solid #8b5cf6;
+}
+
+.history-item.image-only-item:hover {
+  background: rgba(139, 92, 246, 0.04);
+  border-color: rgba(139, 92, 246, 0.25);
+  border-left-color: #a78bfa;
+}
+
+.tab-btn.active.image-only-active {
+  color: white;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(217, 70, 239, 0.15));
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
 .history-item:hover {
   background: rgba(99, 102, 241, 0.04);
   border-color: rgba(99, 102, 241, 0.25);
