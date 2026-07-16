@@ -7,7 +7,7 @@ const STATE = {
   apiKey: localStorage.getItem('apiKey') || 'sk-Bo7Hug0OdQiDgapjSsF9oONIlKeekaOZiIpdNFrdbDvvDYGSXo67NydYMqtgvU7N',
   provider: localStorage.getItem('provider') || 'opencode',
   model: localStorage.getItem('model') || 'big-pickle',
-  mode: localStorage.getItem('mode') || 'articleV11',
+  mode: localStorage.getItem('mode') || 'articleV15',
   keyword: '',
   supportingKeywords: '',
   activeWebsite: localStorage.getItem('activeWebsite') || '',
@@ -22,10 +22,10 @@ const STATE = {
 };
 
 // Validate mode selection to prevent stale values from older versions
-const VALID_MODES = ['articleV11', 'articleV86', 'listicle', 'quickTest'];
+const VALID_MODES = ['articleV15', 'articleV86', 'listicle', 'quickTest'];
 if (!VALID_MODES.includes(STATE.mode)) {
-  STATE.mode = 'articleV11';
-  localStorage.setItem('mode', 'articleV11');
+  STATE.mode = 'articleV15';
+  localStorage.setItem('mode', 'articleV15');
 }
 
 // DOM ELEMENTS

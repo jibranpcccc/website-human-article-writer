@@ -351,67 +351,72 @@ Keyword: ${keyword}`;
 
     if (onDraftUpdate) onDraftUpdate(finalArticleText);
 
-  } else if (mode === 'articleV11') {
-    onProgress('Generating initial draft (Version 11.0)...', 15);
-    const systemInstruction = "You are a professional hairstylist with 15 years experience. You write in a casual, direct, opinionated, and authentic tone. Follow your instructions precisely.";
+  } else if (mode === 'articleV15') {
+    // ----------------------------------------------------
+    // V15 THREE-STAGE GENERATION PIPELINE
+    // ----------------------------------------------------
     
-    const v11Prompt = templates.articleV11.replace('{keyword}', keyword);
+    // Pass 1: V15 Prompt 1 — Draft the Article (No H3s, 2,800–3,200 words, 5–7 H2s)
+    onProgress('Generating initial draft (V15 Prompt 1)...', 15);
+    const systemInstruction1 = "You are a professional hairstylist writing in a grounded salon editorial voice. Follow your instructions precisely.";
+    const prompt1 = templates.articleV15_1.replace(/{keyword}/g, keyword);
 
     const draftText = await callAPI({
       provider,
       baseUrl,
       headers,
       model: apiModel,
-      systemInstruction,
-      messages: [{ role: 'user', content: v11Prompt }],
+      systemInstruction: systemInstruction1,
+      messages: [{ role: 'user', content: prompt1 }],
       onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'V11.0 Initial Draft Generation');
+        if (onReasoning) onReasoning(text, 'V15 Pass 1: Drafting');
       }
     });
 
     if (onDraftUpdate) onDraftUpdate(draftText);
-    onProgress('Verifying and rewriting full article (Applying Version 11.0 rules)...', 45);
 
-    const verificationPrompt = `You are a meticulous hairstyle editor and working stylist. You must review the draft below and rewrite it to correct any mistakes, strictly adhering to the following instructions:
+    // Pass 2: V15 Prompt 2 — Strict Full-Article Repair
+    onProgress('Performing strict full-article repair (V15 Prompt 2)...', 45);
+    const systemInstruction2 = "You are a meticulous hairstyle editor and working stylist. Repair the article precisely according to instructions.";
+    const prompt2 = templates.articleV15_2
+      .replace(/{keyword}/g, keyword)
+      .replace(/{draft}/g, draftText);
 
-RULES TO VERIFY & CORRECT:
-1. Required range: 2,500 to 3,300 words. (Under 2,500 is strictly invalid; do not summarize, add depth to technical details or constraints to hit the minimum word count).
-2. The heading hierarchy: exactly 4 to 6 H2 headings, and enough H3 headings to create 15 to 20 visible headings in total. Ensure no orphan H3s.
-3. No AI terms or transition words (such as: perfect, ideal, dive, delve, embark, unlock, discover, revolutionize, game-changer, tapestry, illuminate, unveil, pivotal, intricate, realm, leverage, harness, navigate, groundbreaking, cutting-edge, meticulous, comprehensive, furthermore, moreover, in conclusion, in today's world, ever-evolving, transformative, uncover, foster, facilitate, stunning, incredible, powerful, journey, here's the thing, the catch, good news).
-4. No clichés or AI constructions (like "It's not just X, it's Y", "From X to Y", "At the end of the day", etc.).
-5. Check ending: The final section must not summarize, restate the main opinion, or give a polished/philosophical takeaway. It must stop on a narrow practical salon/styling detail.
-6. Check format: The response must only contain:
-   [SEO TITLE]: ...
-   [SLUG]: ...
-   [META]: ...
-   # H1 Title ...
-   ## H2 / ### H3 and body content.
+    const repairedText = await callAPI({
+      provider,
+      baseUrl,
+      headers,
+      model: apiModel,
+      systemInstruction: systemInstruction2,
+      messages: [{ role: 'user', content: prompt2 }],
+      onReasoning: (text) => {
+        if (onReasoning) onReasoning(text, 'V15 Pass 2: Repairing');
+      }
+    });
 
-SILENT REVISION FIREWALL:
-- Do not include any introduction, explanations, comments, lists of corrections, or notes before or after the article.
-- The first visible line of your response must start with [SEO TITLE]:. Do not output anything before [SEO TITLE]:. Do not output anything after the final body paragraph.
+    if (onDraftUpdate) onDraftUpdate(repairedText);
 
-DRAFT TO REVIEW:
-${draftText}
-
-Verify the draft, run your internal correction list privately, and then write the entire updated article fully in the required format. Output only the updated article content.`;
+    // Pass 3: V15 Prompt 3 — Pinterest Formatting Only (Break paragraphs, add H3s to reach 15-20 total headings)
+    onProgress('Applying Pinterest formatting and H3 headings (V15 Prompt 3)...', 75);
+    const systemInstruction3 = "You are a visual reading layout editor. Improve visual structure without rewriting or changing any words.";
+    const prompt3 = templates.articleV15_3.replace(/{article}/g, repairedText);
 
     finalArticleText = await callAPI({
       provider,
       baseUrl,
       headers,
       model: apiModel,
-      systemInstruction,
-      messages: [{ role: 'user', content: verificationPrompt }],
+      systemInstruction: systemInstruction3,
+      messages: [{ role: 'user', content: prompt3 }],
       onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'V11.0 Critic & Rewrite Pass');
+        if (onReasoning) onReasoning(text, 'V15 Pass 3: Formatting');
       }
     });
 
-    // Extract META description
+    // Extract SEO META description
     const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
     seoMeta = metaMatch ? metaMatch[1].trim() : '';
-    
+
     // Strip metadata blocks and any conversational intro by slicing from H1 tag (#)
     const h1Index = finalArticleText.indexOf('# ');
     if (h1Index !== -1) {
@@ -425,7 +430,7 @@ Verify the draft, run your internal correction list privately, and then write th
     }
 
     if (onDraftUpdate) onDraftUpdate(finalArticleText);
-    onProgress('Verification and rewrite complete.', 70);
+    onProgress('V15 generation complete.', 90);
 
   } else {
     // Sequential 3-Part Generation for Anti-Skeleton V8.6
@@ -508,9 +513,9 @@ Verify the draft, run your internal correction list privately, and then write th
     onProgress('Stitching Part 1, 2, and 3...', 65);
   }
 
-  // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest mode)
+  // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest and articleV15 modes)
   let formattedArticle = finalArticleText;
-  if (mode !== 'quickTest' && mode !== 'articleV11') {
+  if (mode !== 'quickTest' && mode !== 'articleV15') {
     onProgress('Reformatting article structure (Applying Heading Making System)...', 75);
     const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
     formattedArticle = await callAPI({

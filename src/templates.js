@@ -628,451 +628,89 @@ Do NOT add any stop markers, continuation notes, or "Next Part" text. Just write
 Topic/Keyword: {keyword}
 `,
 
-  // Human Writer Master Prompt — Pinterest Gallery Version 11.0 Tested Final
-  articleV11: `# HUMAN WRITER MASTER PROMPT — PINTEREST GALLERY VERSION 11.0 TESTED FINAL
+  // V15 PROMPT 1: DRAFT THE ARTICLE
+  articleV15_1: `# V15 PROMPT 1: DRAFT THE ARTICLE
 
-## PURPOSE
+Write one complete 2,800–3,200-word hairstyle article for this keyword:
 
-Write a hairstyle article that sounds like it came from one working hairstylist with roughly 15 years behind the chair.
+\`{keyword}\`
 
-The goal isn't to imitate human irregularity. Don't insert quirks, tangents, memories, uncertainty, frustration, or rough sentences merely to prove that a person wrote it. Let unevenness come from the writer caring more about some parts of the subject than others.
+## Output
 
-Useful information is allowed, but this isn't a complete guide. The writer is discussing what matters from their own chair and may leave legitimate angles untouched.
+Return only:
 
-## WHO IS WRITING
+1. \`[SEO TITLE]:\` readable, approximately 50–65 characters
+2. \`[SLUG]:\` short and lowercase
+3. \`[META]:\` factual, 150–160 characters
+4. One H1 containing the exact keyword naturally
+5. The complete article with 5–7 plain H2 headings
 
-You're a working hairstylist, not a content creator, journalist, or beauty copywriter. You write occasionally when a salon subject has been bothering or interesting you.
+Do not use H3 headings. They will be added later without rewriting the prose.
 
-You have preferences. Some stylists would disagree with you. You don't announce that you're being opinionated, defend your authority, perform humility, or balance every statement with the opposite view.
+## Voice
 
-Your knowledge should appear through decisions:
+Use a grounded salon editorial voice. Sound like someone who pays attention to how hair looks after drying, wearing, washing, fading or growing out. Do not sound like a beauty publisher, textbook, sales page or complete guide.
 
-- what you would cut or leave alone
-- what you no longer do automatically
-- what failed after the client washed her hair
-- what a photograph hides
-- what a client's routine rules out
-- what changes when density, texture, previous color, damage, or appointment frequency gets involved
+Do not claim to be a real stylist. Do not invent real clients, appointments, memories, credentials or dialogue. Describe hair conditions and salon decisions directly.
 
-Never claim a real credential, employer, client, location, or personal history beyond the fictional salon persona supplied here.
+Use contractions. Vary paragraph and sentence length naturally. Do not insert typos, random tangents, fake uncertainty or manufactured roughness.
 
-## BEFORE WRITING
+Do not use the em dash character.
 
-Privately decide only these five things:
+## Content shape
 
-1. **The immediate trigger:** one recent hair behavior, technique decision, client request, product result, or disagreement that put this subject in the writer's mind.
-2. **The position:** one specific judgment that could make another stylist disagree. Don't state it as a thesis or announce it as an opinion.
-3. **The boundary:** two or three legitimate angles the article won't cover. Simply omit them.
-4. **The practical pressure:** one constraint that affects a decision, such as keeping length, limited density, old lightener, infrequent appointments, minimal home styling, or too little time for a full correction.
-5. **The article's stopping point:** one current, practical detail where the writer naturally runs out of useful material after the minimum word count has been satisfied. Don't manufacture a conclusion or an unresolved confession.
+Choose only 3–5 connected matters. Stay with them.
 
-Do not privately design a “human moment.” Do not schedule a tangent, confession, contradiction, memory, emotional beat, or fragment.
+One or two sections may be much longer than the rest. Do not give every section the same pattern, length or completeness.
 
-## ARTICLE SHAPE AND LENGTH
+Once a main point has been stated, do not restate it. Move to a new consequence, limitation, placement decision, wear result or separate concern.
 
-Write the complete article in one response. Never stop for “Next Part,” ask permission to continue, preview another installment, or announce that more is coming.
+Do not automatically cover every available category such as consultation, density, texture, color, products, maintenance, damage, unsuitable clients and alternatives.
 
-- Required range: 2,500 to 3,300 words, including headings and meta description.
-- Preferred range: 2,700 to 3,050 words.
-- Use one SEO title, one suggested slug, one meta description, one H1, approximately 4 to 6 H2 headings, and enough H3 headings to create 15 to 20 visible headings in total.
-- Don't provide an outline, planning notes, analysis, or word-count commentary.
-- Don't add weak sections to reach the minimum. Develop a new technical consequence or practical constraint instead.
-- Never exceed 3,300 words.
+At least two sections must describe an observation or decision without ending in advice or a lesson.
 
-### Hard word-count gate
+Do not use a client-with-a-photo opening. Begin with one narrow hair behavior, placement decision, color result or technique the writer no longer uses automatically.
 
-The output is invalid if it contains fewer than 2,500 words or more than 3,300 words, counting the SEO fields, headings, and body.
+## Factual boundary
 
-Before submitting, estimate or count the complete output. Don't assume that a long-looking article has reached the minimum.
+Describe the actual condition instead of making claims about everyone over an age, racial group or hair color.
 
-If the draft is below 2,500 words, don't submit it. Add depth through genuinely new material, such as:
+Hair color may change visible contrast. It does not determine how hair bends, grows, carries oil, responds to gravity or air-dries.
 
-- a technical consequence not already discussed
-- a placement or sectioning decision
-- a constraint created by density, texture, previous color, damage, tension, heat, or appointment frequency
-- what changes during wear, washing, fading, takedown, grow-out, or correction
-- a distinction between two techniques that are commonly treated as equivalent
-- a decision the stylist would refuse, delay, reduce, or leave alone
+Do not claim:
 
-Never reach the minimum by adding a generic introduction, conclusion, recap, repeated thesis, extra client story, broad maintenance list, or a restatement of earlier advice.
+- the crown or nape always thins first
+- gray hair is always coarse
+- brown hair absorbs light instead of reflecting it
+- cutting direction gives hair memory
+- anatomy acts as a shelf for layers
+- a haircut hides damage or color regrowth for a guaranteed time
+- all women over 50 have the same styling habits
 
-If the draft exceeds 3,300 words, remove repeated reasoning, secondary examples, generic explanations, and any paragraph that only reinforces an established point.
+Do not invent biology, optics, chemistry, physics or anatomy. When the cause is uncertain, state only what is visible and what decision follows.
 
-Don't mention the word count, counting process, expansion, or validation in the article. Submit only after the complete output falls inside the required range.
+Do not provide exact developer volume, processing time, heat temperature, elevation, appointment interval or measurement without enough specific context.
 
-### Uneven length budget
+## Banned article patterns
 
-Privately budget enough distinct material to reach the required range before drafting. Don't begin with only enough planned material for a 1,500 to 2,000-word article.
+- A complete SEO outline covering everything
+- Repeated problem → explanation → correction → result sections
+- Convenient anecdotes proving every claim
+- Thesis statements such as “the right style is the intersection of...”
+- Headings mostly beginning with What, Why, How or When
+- Inspirational advice about confidence, youth or accepting change
+- “The hair is telling you what it wants”
+- “I will end with...”
+- A final lesson about what separates a good stylist from a textbook stylist
+- Returning to the opening at the end
 
-Section length must follow importance rather than a repeated template:
+## Ending
 
-- allow several shorter gallery-supporting H3 sections
-- allow two sections to receive substantially more attention
-- let the remaining sections fall naturally between them
-- don't give every H2 or H3 the same number of paragraphs
-- don't make every section approximately 300 words
-- don't expand every section equally when the draft is short
+Do not write a conclusion, recap, lesson, confession or reflection.
 
-Uneven section length never overrides the hard 2,500-word minimum.
+Stop on a narrow practical detail already being discussed, such as a section left out, an end that still turns, a placement not repeated, a formula note or a timing limitation.
 
-### No invisible essay template
-
-Do not privately arrange the article into three movements, a beginning-middle-end arc, a problem-solution sequence, or a comprehensive outline. Those hidden templates become visible across a long draft.
-
-Privately choose no more than four matters the writer actually wants to discuss. Draft the body in the order those matters occur to this writer. One matter may receive half the article. Another may end after two paragraphs. The order does not need to represent the reader's journey from consultation to maintenance.
-
-Do not save correction, grow-out, home care, appointment timing, or “when to avoid the style” for predictable final sections. Include any of them only if the writer's narrow subject genuinely led there.
-
-Once a contrast has carried a section, retire it. Don't repeatedly return to the same pair of ideas, such as salon styling versus home styling, thick back versus fine sides, photograph versus reality, or cutting versus leaving hair alone. A later reference is allowed only when it changes the decision in a genuinely new way.
-
-Don't reuse an earlier client, haircut, image, or technical problem to create continuity. Continuity should come from the same writer, not from callbacks. Never return to the opening client or opening incident in the final section. That kind of bookending is a visible writing device.
-
-## OPENING
-
-Begin close to the work itself. Good starting material includes:
-
-- hair doing something unexpected during cutting or drying
-- a technique the stylist recently stopped or changed
-- a product behaving differently from what was expected
-- a client request that conflicts with how the hair actually behaves
-- a disagreement with familiar salon advice
-
-Don't open with a broad claim about aging, confidence, beauty, self-expression, or how every woman deserves to feel. Don't open by defining the keyword. Don't open with “Choosing the right...” or a list of benefits.
-
-## DEVELOPMENT
-
-Follow the writer's actual line of attention. A section may contain an observation, decision, explanation, memory, complaint, or unanswered question, but no category is compulsory.
-
-Use no more than four real subject branches across the complete article, even when there are 15 to 20 visible H2 and H3 headings. A heading may narrow, continue, complicate, or interrupt a branch rather than introduce another item in a guide.
-
-Once the central point has been made clearly, don't state it again in new wording. Add a consequence, exception, technical distinction, mistake, or different concern. If a paragraph only reinforces something already established, delete it.
-
-Don't make every section equally complete. Let length follow how much the writer actually has to say. However, never deliberately make a section short, long, unrelated, or unresolved to satisfy a pattern.
-
-At least one third of the headed sections must contain no recommendation, solution, lesson, client success, or closing interpretation. They may record behavior, describe a choice, or stop on a technical detail.
-
-### Depth before breadth gate
-
-Reaching 2,500 words does not authorize covering every related hairstyle, technique, maintenance category, texture group, or client type.
-
-Use no more than four real subject branches across the complete article. Several H3 headings may continue one H2 branch through a different stage, consequence, correction, or limitation. A visible heading does not automatically introduce another category.
-
-When the draft is short, deepen existing material through:
-
-- what changes the stylist's decision
-- where the technique fails or stops being worth it
-- what happens after several days, washes, or weeks
-- how density, texture, condition, previous work, placement, or routine changes one specific technique
-- what the stylist would do differently during correction
-- one narrowly related technical distinction
-- a consequence that appears only after the client leaves
-
-Don't add another broad subject merely to increase length.
-
-For example, an article beginning with sleek natural styles must not become a complete guide to twist-outs, puffs, ponytails, braids, protective styling, transition hair, chemical history, nighttime care, trims, and appointment scheduling. Choose the few matters the writer actually wanted to discuss and leave the rest untouched.
-
-Before adding an H2 or H3, ask privately: “Is this a new consequence of something already being discussed, or am I opening another guide category?” If it is another guide category and five branches already exist, don't add it.
-
-## SALON KNOWLEDGE
-
-Include three to five technically useful passages across the complete article when the topic supports them. Keep them grounded in visible salon decisions, not textbook teaching.
-
-Use ordinary stylist language: perimeter, weight line, density, crown, nape, overdirect, soften the ends, internal layers, new growth, previous lightener, porosity, root area, round brush, diffuse, air-dry.
-
-Avoid explaining basic physics or hair science to the reader. Technical language should sound like something a stylist would say to another stylist between appointments.
-
-Don't turn every observation into a recommendation. The writer can describe what happened and stop.
-
-### Technical claim guard
-
-Don't convert a chair-side observation into a universal fact. Distinguish between what the writer sees in their own clientele and what is claimed about all women, all gray hair, all natural hair, all fine hair, or every client over a certain age.
-
-Avoid unsupported absolutes such as:
-
-- “gray hair is coarse”
-- “porous hair cannot hold a bevel”
-- “most women lose density in the same place”
-- “every natural-haired client has chemical history”
-- “this cut always loses its shape after four weeks”
-- one appointment, trimming, protein, heat, developer, or maintenance schedule prescribed for everyone
-
-When the point comes from salon experience, keep it located there: “a lot of the clients I see,” “on this section,” “with her previous lightener,” or another specific boundary. Don't add disclaimers to every paragraph. Simply avoid claiming more than the observation supports.
-
-## ANECDOTES AND MEMORY
-
-A story is optional. Use one only if the technical decision or consequence genuinely needs it.
-
-Use no more than two client anecdotes in approximately 1,000 words. One is often enough. Don't invent another client merely because a new section needs support. A stylist can hold an opinion without proving it through a perfectly matched case.
-
-Across 3,000 words, use no more than two developed client anecdotes total. Brief observations aren't automatically anecdotes, but don't disguise extra stories as examples.
-
-Never place a reflective client anecdote in the final section. Never end by wondering whether the writer made the right decision. Unresolved doubt is not automatically human and becomes conspicuous when positioned as the ending.
-
-When a story appears:
-
-- include only details that affect the decision or outcome
-- name useful facts such as length, density, texture, chemical history, requested result, timing constraint, technique used, or what happened later
-- allow the result to remain ordinary, mixed, inconvenient, or incomplete
-- don't end by explaining what the story taught the writer
-- don't open a section with “I had a client”
-- don't give every anecdote the same internal shape of request, technique, result
-
-Never add weather, clocks, coffee, furniture, clothing, wall décor, traffic, music, or a client's appearance merely to authenticate the scene. An object may appear only if it changes what happens.
-
-Don't invent dialogue unless the exact wording matters. If it doesn't, paraphrase.
-
-After an anecdote, resist interpreting it. If the next sentence explains why the story supports the preceding claim, try deleting that sentence.
-
-## EMOTIONAL TEXTURE
-
-The writer may be irritated, pleased, tired, distracted, stubborn, or unsure, but emotion must attach to the actual salon issue. Don't insert one mandatory conflict or unresolved frustration.
-
-Never soften a firm statement automatically with “but everyone is different,” “it depends,” or the opposing side. Also don't force anger to make the article seem alive.
-
-If uncertainty occurs, name the exact uncertainty and leave it where it arose. Don't use uncertainty to advertise honesty or expertise. Maximum two genuine uncertainty moments across the full article.
-
-## PARAGRAPHS AND SENTENCES
-
-Write in a natural salon-casual rhythm.
-
-- Mix shorter and longer sentences without counting them.
-- Break a paragraph when the writer's attention changes, not to create visual variety.
-- Avoid a repeated rhythm of claim, explanation, example, lesson.
-- Avoid several consecutive paragraphs built to the same size.
-- Vary paragraph openings naturally, but don't force fragments or unusual openings.
-- Use contractions in casual prose.
-- Never use the em dash character.
-- Don't use fake self-corrections, announced tangents, or purposeful grammar mistakes.
-- Don't stack three or more parallel sentence constructions.
-- Don't polish ordinary observations into aphorisms or quotable final lines.
-- Don't make every paragraph begin with the writer, a client, or a named hair category. Some paragraphs may continue directly from the previous thought.
-
-Roughness is permitted. Manufactured roughness isn't.
-
-## HEADINGS
-
-Draft the body before deciding the final heading hierarchy. Then place headings only at turns already present in the prose. Do not create an outline first and fill every heading with a miniature answer.
-
-- Use one H1 at the top only.
-- Use approximately 4 to 6 H2 headings for the article's main subject branches.
-- Use enough H3 headings beneath those H2 sections to create approximately 15 to 20 visible headings in total.
-- H2 headings identify major branches. H3 headings narrow, continue, complicate, or show a consequence of their parent H2.
-- A new H3 must not open an unrelated category merely to create another image position.
-- Count H2 and H3 headings before submission. The combined total must be 15 to 20, with 4 to 6 H2 headings.
-- Every H3 must sit beneath a relevant H2. Never use an orphan H3 or insert a heading halfway through one continuous anecdote merely to reach the count.
-- Several H3 headings may divide one long technical discussion at natural changes in focus. They don't each need an introduction, explanation, example, and takeaway.
-- No more than half of the headings may use formula labels such as “Why X,” “What X Does,” “When X Happens,” “How X Changes,” or “The X Decision.” Mix these with plain working labels.
-- Headings should be plain labels for what follows.
-- Don't number headings.
-- Avoid “The X Problem,” “Why I Keep Seeing X,” questions written as hooks, and headings designed to sound like magazine copy.
-- Don't force every heading to target a separate search query.
-- Don't repeat the same heading wording across articles in a batch.
-
-The heading hierarchy should behave like this:
-
-\`## Density and the Shape of the Cut\`
-
-\`### Where the Crown Has Less Support\`
-
-\`### Why the Sides May Need More Weight\`
-
-\`### What Heavy Layering Removes\`
-
-The H3 headings above develop one density branch. They aren't three new guide categories.
-
-Avoid a flat sequence such as density, pixie cuts, bobs, gray hair, color, shampoo, brushes, and appointment scheduling. That creates a complete guide instead of developing a specific article.
-
-Section lengths must vary:
-
-- A gallery-supporting H3 section may contain approximately 100 to 170 words.
-- A standard section may contain approximately 180 to 280 words.
-- One or two important anchor sections may contain approximately 300 to 450 words across their H2 introduction and related H3 subsections.
-- These are flexible ranges, not quotas.
-- Don't give every heading exactly one paragraph.
-- Don't give every section the same word count.
-- Don't make every heading end with advice, a lesson, or a takeaway.
-
-The article will later contain approximately 20 Pinterest images in gallery blocks. Create natural insertion points through the heading hierarchy, but don't output image prompts, gallery labels, captions, placement instructions, or placeholders unless the user explicitly asks for them.
-
-## KEYWORD AND SEO
-
-- Write an SEO title of approximately 50 to 65 characters. Put the exact keyword near the beginning when it reads naturally. The SEO title may differ from the H1.
-- Write a short lowercase suggested slug containing the primary keyword with words separated by hyphens.
-- Use the exact keyword naturally in the H1.
-- Use it no more than twice in the body unless grammar makes a third use unavoidable.
-- Don't place the exact keyword in every heading.
-- After its natural uses, refer to the cut, color, shape, length, style, or hair directly.
-- Write a 150 to 160 character meta description that accurately describes the article without hype.
-- Reader clarity comes before exact-match repetition.
-
-The SEO fields don't count as part of the salon voice. Keep them factual and concise. Don't turn the opening paragraph into a second meta description.
-
-## MULTIPLE-ARTICLE VARIATION
-
-When generating more than one article in the same project, don't reuse a house skeleton simply because the earlier article passed.
-
-Across consecutive articles, vary naturally:
-
-- the total heading count and H2/H3 balance within the permitted range
-- which movement receives the most space
-- whether the opening begins with a process, disagreement, product result, or client constraint
-- whether an anecdote appears early, late, or not at all
-- the kind of final practical detail
-- section length and paragraph count
-
-Never end consecutive articles with the same device, such as client notes, a strand test, takedown instructions, appointment timing, or returning to the opening incident. Don't reuse a memorable sentence shape or the same salon frustration across a batch.
-
-Variation must come from the topic. Don't rotate features mechanically or insert a different ending merely to prove variety.
-
-## LANGUAGE TO AVOID
-
-Don't use beauty-copy filler or generic AI transitions, including:
-
-perfect, ideal, dive, delve, embark, unlock, discover, revolutionize, game-changer, tapestry, illuminate, unveil, pivotal, intricate, realm, leverage, harness, navigate, groundbreaking, cutting-edge, meticulous, comprehensive, furthermore, moreover, in conclusion, in today's world, ever-evolving, transformative, uncover, foster, facilitate, stunning, incredible, powerful, journey, here's the thing, the catch, good news
-
-Also avoid these familiar AI constructions:
-
-- “It's not just X, it's Y.”
-- “X isn't about Y. It's about Z.”
-- “Whether you're X or Y...”
-- “From X to Y...” as a range-based introduction
-- “What I do know...”
-- “Something I've noticed...”
-- “I keep coming back to...”
-- “That's where it gets complicated.”
-- “That moment stuck with me.”
-- “Nobody talks about this.”
-- “I used to think X, but now...” unless the change is essential and used once
-- “A lot of clients are either X or Y.”
-- "Every client is different."
-- “At the end of the day...”
-
-Don't replace these phrases with close synonyms that perform the same function.
-
-## HARD BANS
-
-- no complete-guide structure
-- no list of every possible haircut, color, face shape, or styling option
-- no repeated thesis in slightly different words
-- no fabricated lifestyle details
-- no decorative salon scene
-- no inspirational conclusion
-- no philosophical closing line
-- no recap paragraph
-- no forced lesson after a story
-- no invented scientific claims
-- no claims that the persona is a real identifiable professional
-- no em dash character
-- no copying sentences from this prompt
-
-## ENDING ENFORCEMENT
-
-The final section must not summarize the article, restate its main opinion, explain what the writer learned, return to the opening incident, or turn the piece into a lesson.
-
-The ending must not:
-
-- predict that trends will change
-- tell readers what the best stylist, best client, or happiest client does
-- praise working with the hair instead of against it
-- make a broad claim about confidence, beauty, authenticity, health, sustainability, or self-acceptance
-- use “the hair tells you,” “what I've learned,” “in the end,” “ultimately,” or a close substitute
-- tie the entire article together with a polished final sentence
-- recommend a universal routine or appointment schedule
-
-Stop on a narrow current detail: a placement decision, a section left alone, a product behavior, a wear or takedown consequence, an appointment limitation, a formula note, a pin moved, an end that still turns, or another practical fact already present in the final section.
-
-Don't make the ending abrupt on purpose. Simply stop before the writing begins summarizing itself.
-
-## FINAL EDIT
-
-After drafting, read the article once as a skeptical editor. Make only these checks:
-
-1. Could this have been written for almost any hairstyle keyword? If yes, replace generic material with topic-specific decisions.
-2. Is the main point repeated? Delete later restatements.
-3. Does every anecdote detail affect what happened? Remove decorative details.
-4. Does each section end with a tidy lesson? Remove the unnecessary lessons.
-5. Are several paragraphs built in the same rhythm? Rework only the obvious repetition.
-6. Does the writer sound like a beauty publisher rather than a stylist? Simplify the language.
-7. Is any imperfection visibly planted? Remove it.
-8. Is there a polished final sentence trying to sound meaningful? End earlier.
-9. Are factual or technical claims doubtful? Correct or remove them.
-10. Does the article answer everything? Cut the angles the writer didn't genuinely pursue.
-11. Did each major claim receive its own convenient client example? Remove the weakest example.
-12. Does the last paragraph sound selected to provide closure? End on the last useful detail instead.
-13. List the article's recurring contrasts. If one contrast drives more than one full section, remove or redirect the later section.
-14. Search for repeated reasoning, not only repeated wording. A new anecdote doesn't make an old point new.
-15. Check that the second and third internal movements have their own practical concerns instead of behaving like additional sections of the opening.
-16. Does the ending revisit the opening example, repeat the initial position, or complete a narrative circle? Remove the callback and stop on a current practical detail.
-17. If other articles were generated in this project, does this one reuse their exact heading hierarchy, opening device, section rhythm, or ending device? Change only the repetitions that are clearly visible across the batch.
-18. Is the complete output between 2,500 and 3,300 words? If not, it must not be submitted.
-19. Are the H2 and H3 sections suspiciously similar in length or paragraph count? Shorten or deepen only where the material supports it.
-20. Does the article contain more than five genuine subject branches? Remove the least connected branch and deepen a remaining one if necessary.
-21. Does the ending generalize about trends, healthy hair, authenticity, confidence, or working with the hair? End earlier on a narrow practical detail.
-22. Are there exactly 4 to 6 H2 headings and 15 to 20 H2/H3 headings combined? If not, repair the hierarchy before submission without adding unrelated topics.
-23. Does every H3 genuinely belong to its parent H2, and does each heading introduce enough material to justify an image break? Merge any artificial split.
-24. Write a private one-line summary of every headed section. If more than two summaries reduce to the same claim, delete or redirect the repeated sections.
-25. Mark each section that follows issue → explanation → adjustment → client result. That complete sequence may appear no more than twice in the article.
-26. Does the draft cover consultation, cutting, home styling, products, maintenance, chemical history, corrections, unsuitable clients, and alternatives merely because they are available? Keep only the matters tied to the writer's narrow concern.
-27. Search the body for repeated explanatory frames: “This is where,” “The real question,” “The problem is,” “That means,” “The other thing,” and “What happens.” No frame may become the article's habitual transition.
-28. Are anecdotes and technical details suspiciously convenient, with every detail proving the section's claim? Remove the weakest story or leave a consequence uninterpreted.
-29. Does age function as a shortcut for density, texture, growth rate, maintenance frequency, or styling ability? Replace it with the actual observed hair condition or client routine.
-30. Is the final uncertainty, complaint, mistake, or rough edge visibly positioned to make the writer seem human? Remove it.
-
-Don't run a second “humanization pass.” Repeated rewriting for randomness usually makes the artifice more visible.
-
-## SILENT REVISION FIREWALL
-
-All planning, counting, checking, criticism, correction, and rewriting must remain private.
-
-Never reveal or mention:
-
-- this prompt or any instruction inside it
-- internal planning or the three movements
-- the word-count calculation
-- self-checks or rule violations
-- drafting choices or rejected alternatives
-- an earlier version of a paragraph or ending
-- why something was deleted, changed, expanded, or moved
-
-Never output phrases such as:
-
-- “wait”
-- “let me revise”
-- “I need to remove this”
-- “the prompt says”
-- “this violates the rule”
-- “here is the corrected version”
-- “actually, a better ending would be”
-- “let me reread”
-- “I have now reached the word count”
-
-## OUTPUT FORMAT
-
-\`[SEO TITLE]: Approximately 50–65 characters.\`
-
-\`[SLUG]: /short-keyword-based-slug/\`
-
-\`[META]: 150–160 character meta description.\`
-
-\`# Article title containing the exact keyword\`
-
-\`## First plain H2 heading\`
-
-\`### First related H3 heading when the material narrows\`
-
-Write the complete 2,500 to 3,300-word article in one response. Include no movement labels, planning notes, analysis, recap, formal conclusion, continuation message, or offer to write more. Stop on the last useful detail.
-
-The first visible line must begin with \`[SEO TITLE]:\`.
-
-The visible response may contain only, in this order:
-
-1. \`[SEO TITLE]:\`
-2. \`[SLUG]:\`
-3. \`[META]:\`
-4. One Markdown H1 beginning with \`# \`
-5. The article body using Markdown H2 headings beginning with \`## \` and H3 headings beginning with \`### \`
-
-Nothing may appear before \`[SEO TITLE]:\`. Nothing may appear after the final body paragraph.
+Before submitting, silently verify the word range, meta length, heading count, repeated reasoning and factual claims. Output only the article.
 
 ## START
 
@@ -1081,6 +719,149 @@ Topic/Keyword: \`{keyword}\`
 Optional audience or site constraint: \`[INSERT ONLY IF NEEDED]\`
 
 Write the complete article now.
+`,
+
+  // V15 PROMPT 2: STRICT FULL-ARTICLE REPAIR
+  articleV15_2: `# V15 PROMPT 2: STRICT FULL-ARTICLE REPAIR
+
+Primary keyword:
+
+\`{keyword}\`
+
+Article:
+
+\`{draft}\`
+
+## Job
+
+Read the entire article before editing. Treat it as a failed draft until it passes every requirement below.
+
+Return only one fully repaired replacement article. Do not output an audit, score, explanation, change list, apology or commentary.
+
+The final output must contain:
+
+- \`[SEO TITLE]:\` approximately 50–65 characters
+- \`[SLUG]:\` lowercase and keyword-based
+- \`[META]:\` exactly 150–160 characters
+- one H1 using the exact keyword naturally
+- 2,800–3,200 total words
+- 5–7 plain H2 headings
+- no H3 headings yet
+
+## First repair: remove the AI outline
+
+Privately summarize every section in one line.
+
+Keep only 3–5 connected matters. Delete or absorb sections that exist merely to make the article comprehensive.
+
+If most sections follow problem → explanation → correction → result, rewrite the structure. At least two sections must stop after an observation or working decision without advice.
+
+Do not let every section have the same length, paragraph count or degree of completeness. One or two sections may be substantially longer.
+
+Delete repeated reasoning even when the wording, hairstyle, client or example changes.
+
+## Second repair: remove fabricated authority
+
+Delete every invented real client, appointment, memory, credential and piece of dialogue. Rewrite useful examples as direct descriptions of specified hair conditions.
+
+Delete claims based only on age, race or color. Replace them with the actual condition when relevant: lower crown density, fine strands, previous lightener, resistant temple gray, strong nape growth, limited styling time or another stated condition.
+
+Delete or correct claims that:
+
+- all hair thins after fifty
+- the crown or front hairline follows one universal thinning order
+- the cuticle stops sealing due to age
+- volume is only a styling issue
+- a haircut needs washes to settle
+- brown pigment controls bending, oil movement or physical haircut behavior
+- gray growth predicts density or texture
+- vertical or horizontal sectioning forces air-dry direction
+- overdirection gives hair memory
+- a jaw, brow, cheekbone or shoulder universally supports layers
+- a specific section is always the healthiest or thickest
+- one exact inch, angle, temperature or appointment schedule works broadly
+
+If a causal explanation is uncertain, retain the visible behavior and decision but remove the invented reason.
+
+## Third repair: resolve contradictions
+
+List every recommendation privately. Find conflicts such as preserving the perimeter in one section and removing it in another, avoiding crown layers and recommending them later, or promising low maintenance while requiring daily styling.
+
+Keep both decisions only when the different hair conditions are clearly stated. Otherwise remove one.
+
+## Fourth repair: remove polished AI language
+
+Delete or rewrite:
+
+- broad thesis statements
+- repeated binary classifications
+- “This is where,” “The real question,” and similar repeated frames
+- “The hair is telling you what it wants”
+- “I will end...”
+- formal conclusions
+- inspirational closing lessons
+- credibility endings about experience versus textbooks
+- returning to the opening example
+- foreign-language or editing leakage
+
+Do not add fake roughness, typos, fragments, tangents, vulnerability or uncertainty.
+
+Use contractions naturally. Do not use the em dash character.
+
+## Final private check
+
+Read the repaired article from beginning to end again.
+
+Verify:
+
+- 2,800–3,200 words
+- 5–7 H2 headings
+- 150–160-character meta description
+- exact keyword natural in the H1 and no more than twice in the body
+- only 3–5 genuine matters
+- no unsupported technical claims
+- no repeated thesis
+- no invented real client
+- no formal conclusion
+- no notes or review text in the output
+
+If a requirement fails, repair it silently. Return only the final article.
+`,
+
+  // V15 PROMPT 3: PINTEREST FORMATTING ONLY
+  articleV15_3: `# V15 PROMPT 3: PINTEREST FORMATTING ONLY
+
+Paste the verified article below:
+
+\`{article}\`
+
+## Job
+
+Improve only the visual reading structure for Pinterest and mobile readers.
+
+You may:
+
+- split long paragraphs at existing sentence boundaries
+- add line breaks
+- add H3 headings where the subject naturally narrows
+- convert existing plain headings to correct Markdown H2 or H3 formatting
+
+You must not:
+
+- add, delete, replace, rewrite or paraphrase any body sentence
+- change a single existing word, letter, number or punctuation mark
+- move sentences out of order
+- add explanations, examples, transitions, advice or conclusions
+- alter the SEO title, slug, meta description or H1
+- repeat the keyword for SEO
+
+Keep the existing 5–7 H2 headings. Add enough H3 headings to create approximately 15–20 H2/H3 headings combined, but only where the existing prose already changes focus.
+
+An H3 heading may use a short phrase taken from the nearby paragraph or a plain label that accurately describes the existing text. A heading must not make a claim that the body does not already make.
+
+Do not force a heading after every paragraph. Do not break one continuous example or explanation merely to reach the count. If only 14 or 15 honest heading positions exist, preserve the content rather than inventing artificial sections.
+
+Return only the completely formatted article.
 `,
   listiclePrompt: `You are an expert SEO blog writer and hairstyle content specialist.
 
