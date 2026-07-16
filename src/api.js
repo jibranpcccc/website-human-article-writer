@@ -387,10 +387,14 @@ RULES TO VERIFY & CORRECT:
    # H1 Title ...
    ## H2 / ### H3 and body content.
 
+SILENT REVISION FIREWALL:
+- Do not include any introduction, explanations, comments, lists of corrections, or notes before or after the article.
+- The first visible line of your response must start with [SEO TITLE]:. Do not output anything before [SEO TITLE]:. Do not output anything after the final body paragraph.
+
 DRAFT TO REVIEW:
 ${draftText}
 
-Verify the draft, list the corrections/improvements needed internally, and then write the entire updated article fully in the required format. Output only the updated article content.`;
+Verify the draft, run your internal correction list privately, and then write the entire updated article fully in the required format. Output only the updated article content.`;
 
     finalArticleText = await callAPI({
       provider,
@@ -408,12 +412,17 @@ Verify the draft, list the corrections/improvements needed internally, and then 
     const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
     seoMeta = metaMatch ? metaMatch[1].trim() : '';
     
-    // Strip metadata blocks from visible article text
-    finalArticleText = finalArticleText
-      .replace(/\[SEO TITLE\]:.*?\n/gi, '')
-      .replace(/\[SLUG\]:.*?\n/gi, '')
-      .replace(/\[META\]:.*?\n/gi, '')
-      .trim();
+    // Strip metadata blocks and any conversational intro by slicing from H1 tag (#)
+    const h1Index = finalArticleText.indexOf('# ');
+    if (h1Index !== -1) {
+      finalArticleText = finalArticleText.slice(h1Index).trim();
+    } else {
+      finalArticleText = finalArticleText
+        .replace(/\[SEO TITLE\]:.*?\n/gi, '')
+        .replace(/\[SLUG\]:.*?\n/gi, '')
+        .replace(/\[META\]:.*?\n/gi, '')
+        .trim();
+    }
 
     if (onDraftUpdate) onDraftUpdate(finalArticleText);
     onProgress('Verification and rewrite complete.', 70);
@@ -620,8 +629,8 @@ async function callAPI({ provider, baseUrl, headers, model, systemInstruction, m
           };
         }
 
-        // Determine request timeout: 180 seconds for free models, 300 seconds for reasoning/paid models (like big-pickle)
-        const timeoutMs = timeout || (isFreeModel ? 180000 : 300000);
+        // Determine request timeout: 180 seconds for free models, 900 seconds for reasoning/paid models (like big-pickle)
+        const timeoutMs = timeout || (isFreeModel ? 180000 : 900000);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
