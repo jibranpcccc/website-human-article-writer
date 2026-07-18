@@ -1,3 +1,4 @@
+import { HUMAN_WRITER_MASTER_PROMPT } from './bridgePromptTemplate.js';
 import { templates } from './templates.js';
 import { createClient } from '@supabase/supabase-js';
 
@@ -70,6 +71,22 @@ const hasMistralKeys = MISTRAL_KEYS.length > 0;
 const IMAGE_PROMPT_MODEL = hasMistralKeys ? 'mistral-large-latest' : 'mimo-v2.5-free';
 const IMAGE_PROMPT_MAX_TOKENS = 6000; // Optimal limit for chunked prompts to prevent cutoff
 
+function cleanArticleText(text) {
+  if (!text) return '';
+  return text
+    // Remove standalone part labels (e.g. PART 1, Part 2, [PART 3], **PART 1**, --- PART 2 ---)
+    .replace(/^(?:#+\s+|\*\*|---\s*|\[)?\s*PART\s*\d+\s*(?:\s*---|\]|\*\*)?\s*$/gmi, '')
+    // Remove other bridge stop markers
+    .replace(/\[Stop\.\s*Write Part \d+ next\.\]/gi, '')
+    .replace(/\*\*NEXT PART\*\*/gi, '')
+    .replace(/---\s*\n*\[PART \d+\]/gi, '')
+    .replace(/\[Continue article directly\..*?\]/gi, '')
+    .replace(/\[Body text.*?\]/gi, '')
+    .replace(/\[META\]:.*?$/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function extractListicleHeadings(content) {
   if (!content) return '';
   const lines = content.split('\n');
@@ -102,6 +119,28 @@ function extractListicleHeadings(content) {
   }
 
   return extracted.join('\n\n');
+}
+
+function buildBridgePrompt({ mode, keyword, supportingKeywords = '' }) {
+  if (mode === 'quickTest') {
+    return `Write a short, friendly blog-style test for the keyword "${keyword}". Exactly 2-3 sentences are enough. Start with one H1 heading.`;
+  }
+  if (mode === 'articleV10') {
+    return templates.articleV10.replace(/{keyword}/g, keyword);
+  }
+  if (mode === 'articleV13') {
+    return templates.articleV13.replace(/{keyword}/g, keyword);
+  }
+  if (mode === 'articleV14') {
+    return templates.articleV14.replace(/{keyword}/g, keyword);
+  }
+  if (mode === 'listicle') {
+    return templates.listiclePrompt
+      .replace(/{keyword}/g, keyword)
+      .replace(/{supporting_keywords}/g, supportingKeywords || '');
+  }
+  // Full anti-skeleton human writer master prompt (3 parts, 1000+ words each)
+  return HUMAN_WRITER_MASTER_PROMPT.replace('[INSERT KEYWORD HERE]', keyword);
 }
 
 function extractGenderAndAge(keyword) {
@@ -145,12 +184,64 @@ export async function generateContent({
   onDraftUpdate,
   onReasoning
 }) {
-  if (!apiKey) {
-    throw new Error('API Key is required to run generation.');
-  }
-
   // Normalize model name for OpenCode Big Pickle
   const apiModel = model === 'opencode/big-pickle' ? 'big-pickle' : model;
+
+  // --- BigPickle ChatGPT Browser Bridge mode ---
+  // Written content comes from your logged-in ChatGPT browser instead of a direct API.
+  let fromBridge = false;
+  let finalArticleText = '';
+  let seoMeta = '';
+  let detectedModel = '';
+
+  if (provider === 'bigPickleBridge' || model === 'chatgpt-browser') {
+    fromBridge = true;
+    if (mode === 'imageOnly') {
+      finalArticleText = '';
+      seoMeta = 'Image prompts only (via ChatGPT browser)';
+    } else {
+      if (onProgress) onProgress('BigPickle Bridge: dispatching prompt to ChatGPT browser...', 5);
+      const { dispatchBigPickleJob, waitForBigPickleResult } = await import('./bridgeClient.js');
+      const prompt = await buildBridgePrompt({ mode, keyword, supportingKeywords });
+      const { jobId } = await dispatchBigPickleJob({ prompt, modelLabel: model || 'chatgpt-browser', mode });
+      if (onProgress) onProgress('BigPickle Bridge: waiting for ChatGPT response...', 25);
+      const result = await waitForBigPickleResult(jobId, {
+        onProgress: (status) => {
+          if (onReasoning) onReasoning(status, 'BigPickle → ChatGPT');
+        }
+      });
+      const fullText = typeof result === 'string' ? result : (result?.content || '');
+      detectedModel = typeof result === 'object' ? (result?.model || '') : '';
+      if (!fullText || fullText.trim() === '') {
+        throw new Error('BigPickle Bridge returned empty response from ChatGPT.');
+      }
+      if (onProgress) onProgress('BigPickle Bridge: response received.', 50);
+
+      let cleanArticle = fullText;
+      const metaMatch = cleanArticle.match(/\[META\]:\s*(.+)/i);
+      if (metaMatch) {
+        seoMeta = metaMatch[1].trim();
+      }
+      cleanArticle = cleanArticleText(cleanArticle);
+
+      const h1Index = cleanArticle.indexOf('# ');
+      if (h1Index !== -1) cleanArticle = cleanArticle.slice(h1Index).trim();
+
+      finalArticleText = cleanArticle;
+      if (onDraftUpdate) onDraftUpdate(finalArticleText);
+    }
+  }
+
+  if (!fromBridge) {
+    // If no key was provided for OpenCode, fall back to environment config
+    if (!apiKey && provider === 'opencode') {
+      apiKey = getEnvVar('VITE_OPENCODE_API_KEY');
+    }
+    // API Key is required for direct API modes only
+    if (!apiKey) {
+      throw new Error('API Key is required to run generation.');
+    }
+  }
 
   // 1. SELECT API SETTINGS — all routed via Vite local proxy (vite.config.js)
   let baseUrl = '';
@@ -289,21 +380,22 @@ Do NOT write any descriptions, introductions, or other text. Just output the num
       .trim();
   })();
 
-  let finalArticleText = '';
   let part1Text = '';
   let part2Text = '';
   let part3Text = '';
-  let seoMeta = '';
 
   // 2. STAGE 1: ARTICLE GENERATION
-  if (mode === 'imageOnly') {
-    onProgress('Image Prompts Mode: Skipping article writing...', 15);
-    finalArticleText = '';
-    seoMeta = `Image prompts only`;
-  } else if (mode === 'quickTest') {
-    // ── Quick Test Mode — single call, ~400 words, fast model check ──
-    onProgress('Quick Test: Generating 400-word article...', 15);
-    const quickPrompt = `Write a 400-word blog article about "${keyword}".
+  if (fromBridge) {
+    onProgress('BigPickle Bridge: article draft retrieved from ChatGPT.', 65);
+  } else {
+    if (mode === 'imageOnly') {
+      onProgress('Image Prompts Mode: Skipping article writing...', 15);
+      finalArticleText = '';
+      seoMeta = `Image prompts only`;
+    } else if (mode === 'quickTest') {
+      // ── Quick Test Mode — single call, ~400 words, fast model check ──
+      onProgress('Quick Test: Generating 400-word article...', 15);
+      const quickPrompt = `Write a 400-word blog article about "${keyword}".
 
 Requirements:
 - Natural, conversational tone
@@ -315,211 +407,349 @@ Requirements:
 
 Keyword: ${keyword}`;
 
-    finalArticleText = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction: 'You are a concise blog writer. Write exactly what is asked.',
-      messages: [{ role: 'user', content: quickPrompt }],
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'Quick Test Article');
+      finalArticleText = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction: 'You are a concise blog writer. Write exactly what is asked.',
+        messages: [{ role: 'user', content: quickPrompt }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'Quick Test Article');
+        }
+      });
+
+      if (onDraftUpdate) onDraftUpdate(finalArticleText);
+      onProgress('Quick test article done. Generating image prompts...', 65);
+
+    } else if (mode === 'listicle') {
+      onProgress('Generating listicle content...', 15);
+      const listiclePrompt = templates.listiclePrompt
+        .replace('{keyword}', keyword)
+        .replace('{supporting_keywords}', supportingKeywords || '');
+
+      finalArticleText = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction: 'You are an expert article writer.',
+        messages: [{ role: 'user', content: listiclePrompt }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'Listicle Drafting');
+        }
+      });
+
+      // Extract META from listicle too
+      const listicleMetaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
+      seoMeta = listicleMetaMatch ? listicleMetaMatch[1].trim() : '';
+      finalArticleText = finalArticleText.replace(/\[META\]:.*?\n/gi, '').trim();
+
+      if (onDraftUpdate) onDraftUpdate(finalArticleText);
+
+    } else if (mode === 'articleV15') {
+      // ----------------------------------------------------
+      // V15 THREE-STAGE GENERATION PIPELINE
+      // ----------------------------------------------------
+      
+      // Pass 1: V15 Prompt 1 — Draft the Article (No H3s, 2,800–3,200 words, 5–7 H2s)
+      onProgress('Generating initial draft (V15 Prompt 1)...', 15);
+      const systemInstruction1 = "You are a professional hairstylist writing in a grounded salon editorial voice. Follow your instructions precisely.";
+      const prompt1 = templates.articleV15_1.replace(/{keyword}/g, keyword);
+
+      const draftText = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction: systemInstruction1,
+        messages: [{ role: 'user', content: prompt1 }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'V15 Pass 1: Drafting');
+        }
+      });
+
+      if (onDraftUpdate) onDraftUpdate(draftText);
+
+      // Pass 2: V15 Prompt 2 — Strict Full-Article Repair
+      onProgress('Performing strict full-article repair (V15 Prompt 2)...', 45);
+      const systemInstruction2 = "You are a meticulous hairstyle editor and working stylist. Repair the article precisely according to instructions.";
+      const prompt2 = templates.articleV15_2
+        .replace(/{keyword}/g, keyword)
+        .replace(/{draft}/g, draftText);
+
+      const repairedText = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction: systemInstruction2,
+        messages: [{ role: 'user', content: prompt2 }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'V15 Pass 2: Repairing');
+        }
+      });
+
+      if (onDraftUpdate) onDraftUpdate(repairedText);
+
+      // Pass 3: V15 Prompt 3 — Pinterest Formatting Only (Break paragraphs, add H3s to reach 15-20 total headings)
+      onProgress('Applying Pinterest formatting and H3 headings (V15 Prompt 3)...', 75);
+      const systemInstruction3 = "You are a visual reading layout editor. Improve visual structure without rewriting or changing any words.";
+      const prompt3 = templates.articleV15_3.replace(/{article}/g, repairedText);
+
+      finalArticleText = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction: systemInstruction3,
+        messages: [{ role: 'user', content: prompt3 }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'V15 Pass 3: Formatting');
+        }
+      });
+
+      // Extract SEO META description
+      const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
+      seoMeta = metaMatch ? metaMatch[1].trim() : '';
+
+      // Strip metadata blocks and any conversational intro by slicing from H1 tag (#)
+      const h1Index = finalArticleText.indexOf('# ');
+      if (h1Index !== -1) {
+        finalArticleText = finalArticleText.slice(h1Index).trim();
+      } else {
+        finalArticleText = finalArticleText
+          .replace(/\[SEO TITLE\]:.*?\n/gi, '')
+          .replace(/\[SLUG\]:.*?\n/gi, '')
+          .replace(/\[META\]:.*?\n/gi, '')
+          .trim();
       }
-    });
 
-    if (onDraftUpdate) onDraftUpdate(finalArticleText);
-    onProgress('Quick test article done. Generating image prompts...', 65);
+      if (onDraftUpdate) onDraftUpdate(finalArticleText);
+      onProgress('V15 generation complete.', 90);
 
-  } else if (mode === 'listicle') {
-    onProgress('Generating listicle content...', 15);
-    const listiclePrompt = templates.listiclePrompt
-      .replace('{keyword}', keyword)
-      .replace('{supporting_keywords}', supportingKeywords || '');
+    } else if (mode === 'articleV10') {
+      onProgress('Generating article (V10.0 Master Prompt)...', 15);
+      const systemInstruction = "You are a professional hairstylist writing in a grounded salon casual voice. Follow your instructions precisely.";
+      const prompt10 = templates.articleV10.replace(/{keyword}/g, keyword);
 
-    finalArticleText = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction: 'You are an expert article writer.',
-      messages: [{ role: 'user', content: listiclePrompt }],
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'Listicle Drafting');
+      finalArticleText = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction,
+        messages: [{ role: 'user', content: prompt10 }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'V10 Drafting');
+        }
+      });
+
+      // Extract META
+      const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
+      seoMeta = metaMatch ? metaMatch[1].trim() : '';
+
+      finalArticleText = cleanArticleText(finalArticleText);
+
+      // Strip any intro before the H1 title
+      const h1Index = finalArticleText.indexOf('# ');
+      if (h1Index !== -1) {
+        finalArticleText = finalArticleText.slice(h1Index).trim();
       }
-    });
 
-    // Extract META from listicle too
-    const listicleMetaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
-    seoMeta = listicleMetaMatch ? listicleMetaMatch[1].trim() : '';
-    finalArticleText = finalArticleText.replace(/\[META\]:.*?\n/gi, '').trim();
+      if (onDraftUpdate) onDraftUpdate(finalArticleText);
+      onProgress('V10.0 generation complete.', 90);
 
-    if (onDraftUpdate) onDraftUpdate(finalArticleText);
+    } else if (mode === 'articleV13') {
+      onProgress('Generating Part 1 (V13.0 Master Prompt)...', 15);
+      const systemInstruction = "You are a professional hairstylist writing in a grounded salon casual voice. Follow your instructions precisely.";
+      const prompt13 = templates.articleV13.replace(/{keyword}/g, keyword);
 
-  } else if (mode === 'articleV15') {
-    // ----------------------------------------------------
-    // V15 THREE-STAGE GENERATION PIPELINE
-    // ----------------------------------------------------
-    
-    // Pass 1: V15 Prompt 1 — Draft the Article (No H3s, 2,800–3,200 words, 5–7 H2s)
-    onProgress('Generating initial draft (V15 Prompt 1)...', 15);
-    const systemInstruction1 = "You are a professional hairstylist writing in a grounded salon editorial voice. Follow your instructions precisely.";
-    const prompt1 = templates.articleV15_1.replace(/{keyword}/g, keyword);
+      const chatHistory = [
+        { role: 'user', content: prompt13 }
+      ];
 
-    const draftText = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction: systemInstruction1,
-      messages: [{ role: 'user', content: prompt1 }],
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'V15 Pass 1: Drafting');
+      part1Text = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction,
+        messages: chatHistory,
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'V13 Part 1: Outline & Intro');
+        }
+      });
+
+      chatHistory.push({ role: 'assistant', content: part1Text });
+      if (onDraftUpdate) onDraftUpdate(part1Text);
+      onProgress('Part 1 Completed. Initializing Part 2...', 35);
+
+      // Call Part 2
+      chatHistory.push({ role: 'user', content: 'Next Part. Continue writing the next 2-3 H2 sections of the article, maintaining the high-quality hairstylist voice and writing around 800 words.' });
+      part2Text = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction,
+        messages: chatHistory,
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'V13 Part 2: Body sections');
+        }
+      });
+
+      chatHistory.push({ role: 'assistant', content: part2Text });
+      if (onDraftUpdate) onDraftUpdate(`${part1Text}\n\n${part2Text}`);
+      onProgress('Part 2 Completed. Initializing Part 3...', 60);
+
+      // Call Part 3
+      chatHistory.push({ role: 'user', content: 'Next Part. Write the final H2 sections of the article, completing it without a conclusion, and append the [META] block at the very end as requested. Write around 700-800 words.' });
+      part3Text = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction,
+        messages: chatHistory,
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'V13 Part 3: Maintenance & Conclusion');
+        }
+      });
+
+      finalArticleText = `${part1Text}\n\n${part2Text}\n\n${part3Text}`;
+
+      // Extract META
+      const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
+      seoMeta = metaMatch ? metaMatch[1].trim() : '';
+
+      finalArticleText = cleanArticleText(finalArticleText);
+
+      // Strip any intro before the H1 title
+      const h1Index = finalArticleText.indexOf('# ');
+      if (h1Index !== -1) {
+        finalArticleText = finalArticleText.slice(h1Index).trim();
       }
-    });
 
-    if (onDraftUpdate) onDraftUpdate(draftText);
+      if (onDraftUpdate) onDraftUpdate(finalArticleText);
+      onProgress('V13.0 generation complete.', 90);
 
-    // Pass 2: V15 Prompt 2 — Strict Full-Article Repair
-    onProgress('Performing strict full-article repair (V15 Prompt 2)...', 45);
-    const systemInstruction2 = "You are a meticulous hairstyle editor and working stylist. Repair the article precisely according to instructions.";
-    const prompt2 = templates.articleV15_2
-      .replace(/{keyword}/g, keyword)
-      .replace(/{draft}/g, draftText);
+    } else if (mode === 'articleV14') {
+      onProgress('Generating article (V14.0 Master Prompt)...', 15);
+      const systemInstruction = "You are a professional hairstylist writing in a grounded salon casual voice. Follow your instructions precisely.";
+      const prompt14 = templates.articleV14.replace(/{keyword}/g, keyword);
 
-    const repairedText = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction: systemInstruction2,
-      messages: [{ role: 'user', content: prompt2 }],
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'V15 Pass 2: Repairing');
+      finalArticleText = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction,
+        messages: [{ role: 'user', content: prompt14 }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'V14 Drafting');
+        }
+      });
+
+      // Extract META
+      const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
+      seoMeta = metaMatch ? metaMatch[1].trim() : '';
+
+      finalArticleText = cleanArticleText(finalArticleText);
+
+      // Strip any intro before the H1 title
+      const h1Index = finalArticleText.indexOf('# ');
+      if (h1Index !== -1) {
+        finalArticleText = finalArticleText.slice(h1Index).trim();
       }
-    });
 
-    if (onDraftUpdate) onDraftUpdate(repairedText);
+      if (onDraftUpdate) onDraftUpdate(finalArticleText);
+      onProgress('V14.0 generation complete.', 90);
 
-    // Pass 3: V15 Prompt 3 — Pinterest Formatting Only (Break paragraphs, add H3s to reach 15-20 total headings)
-    onProgress('Applying Pinterest formatting and H3 headings (V15 Prompt 3)...', 75);
-    const systemInstruction3 = "You are a visual reading layout editor. Improve visual structure without rewriting or changing any words.";
-    const prompt3 = templates.articleV15_3.replace(/{article}/g, repairedText);
-
-    finalArticleText = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction: systemInstruction3,
-      messages: [{ role: 'user', content: prompt3 }],
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'V15 Pass 3: Formatting');
-      }
-    });
-
-    // Extract SEO META description
-    const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
-    seoMeta = metaMatch ? metaMatch[1].trim() : '';
-
-    // Strip metadata blocks and any conversational intro by slicing from H1 tag (#)
-    const h1Index = finalArticleText.indexOf('# ');
-    if (h1Index !== -1) {
-      finalArticleText = finalArticleText.slice(h1Index).trim();
     } else {
-      finalArticleText = finalArticleText
-        .replace(/\[SEO TITLE\]:.*?\n/gi, '')
-        .replace(/\[SLUG\]:.*?\n/gi, '')
-        .replace(/\[META\]:.*?\n/gi, '')
-        .trim();
+      // Sequential 3-Part Generation for Anti-Skeleton V8.6
+      onProgress('Running Voice Seed Setup & Generating Part 1...', 10);
+      const systemInstruction = "You are a professional hairstylist with 15 years experience. You write in a casual, direct, opinionated, and authentic tone. Follow your instructions precisely.";
+      
+      const part1Prompt = templates.articleV86.replace('{keyword}', keyword);
+
+      // Call Part 1
+      const chatHistory = [
+        { role: 'user', content: part1Prompt }
+      ];
+
+      part1Text = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction,
+        messages: chatHistory,
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'Part 1: Voice Setup & Outline');
+        }
+      });
+
+      chatHistory.push({ role: 'assistant', content: part1Text });
+      if (onDraftUpdate) onDraftUpdate(part1Text);
+      onProgress('Part 1 Completed. Initializing Part 2...', 30);
+
+      // Call Part 2
+      chatHistory.push({ role: 'user', content: 'Next Part.' });
+      part2Text = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction,
+        messages: chatHistory,
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'Part 2: Core Body Expansion');
+        }
+      });
+
+      chatHistory.push({ role: 'assistant', content: part2Text });
+      if (onDraftUpdate) onDraftUpdate(`${part1Text}\n\n${part2Text}`);
+      onProgress('Part 2 Completed. Initializing Part 3...', 50);
+
+      // Call Part 3
+      chatHistory.push({ role: 'user', content: 'Next Part.' });
+      part3Text = await callAPI({
+        provider,
+        baseUrl,
+        headers,
+        model: apiModel,
+        systemInstruction,
+        messages: chatHistory,
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, 'Part 3: Conclusion & FAQ');
+        }
+      });
+
+      finalArticleText = `${part1Text}\n\n${part2Text}\n\n${part3Text}`;
+      
+      // Extract META description before stripping it
+      const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
+      seoMeta = metaMatch ? metaMatch[1].trim() : '';
+      
+      // Strip any AI stop-marker artifacts that should never appear in final output
+      finalArticleText = cleanArticleText(finalArticleText);
+      
+      if (onDraftUpdate) onDraftUpdate(finalArticleText);
+      onProgress('Stitching Part 1, 2, and 3...', 65);
     }
-
-    if (onDraftUpdate) onDraftUpdate(finalArticleText);
-    onProgress('V15 generation complete.', 90);
-
-  } else {
-    // Sequential 3-Part Generation for Anti-Skeleton V8.6
-    onProgress('Running Voice Seed Setup & Generating Part 1...', 10);
-    const systemInstruction = "You are a professional hairstylist with 15 years experience. You write in a casual, direct, opinionated, and authentic tone. Follow your instructions precisely.";
-    
-    const part1Prompt = templates.articleV86.replace('{keyword}', keyword);
-
-    // Call Part 1
-    const chatHistory = [
-      { role: 'user', content: part1Prompt }
-    ];
-
-    part1Text = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction,
-      messages: chatHistory,
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'Part 1: Voice Setup & Outline');
-      }
-    });
-
-    chatHistory.push({ role: 'assistant', content: part1Text });
-    if (onDraftUpdate) onDraftUpdate(part1Text);
-    onProgress('Part 1 Completed. Initializing Part 2...', 30);
-
-    // Call Part 2
-    chatHistory.push({ role: 'user', content: 'Next Part.' });
-    part2Text = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction,
-      messages: chatHistory,
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'Part 2: Core Body Expansion');
-      }
-    });
-
-    chatHistory.push({ role: 'assistant', content: part2Text });
-    if (onDraftUpdate) onDraftUpdate(`${part1Text}\n\n${part2Text}`);
-    onProgress('Part 2 Completed. Initializing Part 3...', 50);
-
-    // Call Part 3
-    chatHistory.push({ role: 'user', content: 'Next Part.' });
-    part3Text = await callAPI({
-      provider,
-      baseUrl,
-      headers,
-      model: apiModel,
-      systemInstruction,
-      messages: chatHistory,
-      onReasoning: (text) => {
-        if (onReasoning) onReasoning(text, 'Part 3: Conclusion & FAQ');
-      }
-    });
-
-    finalArticleText = `${part1Text}\n\n${part2Text}\n\n${part3Text}`;
-    
-    // Extract META description before stripping it
-    const metaMatch = finalArticleText.match(/\[META\]:\s*(.+)/i);
-    seoMeta = metaMatch ? metaMatch[1].trim() : '';
-    
-    // Strip any AI stop-marker artifacts that should never appear in final output
-    finalArticleText = finalArticleText
-      .replace(/\[Stop\.\s*Write Part \d+ next\.\]/gi, '')
-      .replace(/\*\*NEXT PART\*\*/gi, '')
-      .replace(/---\s*\n*\[PART \d+\]/gi, '')
-      .replace(/\[Continue article directly\..*?\]/gi, '')
-      .replace(/\[Body text.*?\]/gi, '')
-      .replace(/\[META\]:.*?\n/gi, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-    
-    if (onDraftUpdate) onDraftUpdate(finalArticleText);
-    onProgress('Stitching Part 1, 2, and 3...', 65);
   }
 
   // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest and articleV15 modes)
   let formattedArticle = finalArticleText;
-  if (mode !== 'quickTest' && mode !== 'articleV15' && mode !== 'imageOnly') {
+  if (!fromBridge && 
+      mode !== 'quickTest' && 
+      mode !== 'articleV15' && 
+      mode !== 'imageOnly' && 
+      mode !== 'articleV10' && 
+      mode !== 'articleV13' && 
+      mode !== 'articleV14' && 
+      mode !== 'articleV86') {
     onProgress('Reformatting article structure (Applying Heading Making System)...', 75);
     const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
     formattedArticle = await callAPI({
@@ -548,7 +778,8 @@ Keyword: ${keyword}`;
     blogImagePrompts: blogImagePrompts,
     pinterestImagePrompts: pinterestImagePrompts,
     seoMeta: seoMeta,
-    mode: mode
+    mode: mode,
+    responseModel: detectedModel
   };
 
   if (supabase) {

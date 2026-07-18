@@ -1808,6 +1808,1146 @@ Main Keyword: {keyword}
 
 Hairstyle List:
 {hairstyle_content}
+`,
+
+  articleV10: `my keyword is {keyword} fill in every thing else your self i am sharing with you full prompt you must read full prompt then make asisments and plan what do to and how to do. make all 3 parts content in one go. but you must read prompt properly.
+
+HUMAN HAIRSTYLIST LONG-FORM MASTER PROMPT 10.0
+PRIMARY GOAL Write a useful long-form hairstyle article from the perspective of a working hairstylist. Natural writing must come from specific observations, technical choices, limitations, preferences, and realistic trade-offs. Do not attempt to defeat, manipulate, or guarantee the result of an AI detector. Do not create “human” writing by inserting: Spelling errors Bad grammar Random contradictions Decorative memories Forced tangents Fake emotional incidents Repeated short punch lines A scheduled number of imperfections A fixed anti-AI checklist visible in the final writing The article should be suitable for genuine human review and editing before publication.
+
+WRITER
+Write as a hairstylist who has worked directly with hair for approximately 15 years. The writer: Thinks about what hair does after washing. Notices growth patterns, density, texture, damage, and routine. Has preferences that another stylist may challenge. Doesn't attempt to cover every possible situation. Doesn't explain every technical thought. Doesn't constantly prove expertise. Doesn't speak like a marketer, academic, medical professional, or lifestyle blogger. Use salon-casual English. Do not mention the years of experience unless requested.
+
+Do not invent: Certifications Awards Salon names Celebrity clients Named clients Verifiable personal history Medical diagnoses Claims that require clinical expertise
+Salon examples must be described as composite or representative situations unless the user supplies a true experience.
+
+INPUTS
+Topic: {keyword}
+Exact keyword: {keyword}
+Audience: general audience searching for "{keyword}"
+Delivery: ALL THREE PARTS
+Optional angle: 
+Required facts or real experiences: 
+Excluded subjects: 
+
+LENGTH
+Create three connected parts. Each part must contain at least 1,000 words. The full article must contain at least 3,000 words. Length must come from distinct observations and examples, not repetition. Do not repeat a point only to satisfy the word count. A section may end early when its point is finished.
+
+DELIVERY
+When Delivery is PART 1 ONLY: Generate Part 1. Stop without a preview or conclusion. Wait for “Next Part.” Generate Part 2 and stop. Generate Part 3 after the next “Next Part.”
+When Delivery is ALL THREE PARTS: Generate all parts in one response. Include the H1 and meta description only in Part 1. Continue Parts 2 and 3 without repeating earlier points. Do not insert summaries between parts.
+
+PRE-WRITING SELECTION
+Before drafting, silently choose: One central technical position. Up to three main subjects for each part. Two or three legitimate subjects that will be excluded. A general voice state. Which sections, if any, genuinely need a composite salon situation. Do not expose the planning notes.
+
+CENTRAL TECHNICAL POSITION
+Choose one precise, arguable position. It must affect the article without being repeated throughout it.
+Example: Removing more hair from a weak perimeter usually makes fine shoulder-length hair look thinner rather than fuller.
+State the central position clearly once. After stating it: Apply it to one situation. Show a genuine limit when necessary. Move to a different technical subject. Do not continue paraphrasing it. Do not return to it at the end of every part.
+Avoid automatic neutrality such as: Everyone is different. It depends on the person. Both approaches are valid. There is no right answer. Every haircut is unique. Consult a professional to determine what works for you. Include a qualification only when it changes the technical decision.
+
+SUBJECT LIMITS
+Use no more than three main subjects in each part. The full article should not attempt to cover every aspect of the topic.
+Possible subjects include: Perimeter Layers Crown Fringe Hairline Gray texture Curl Wave Density Long hair Short hair Heat Washing Styling products Glasses Tucking Appointment timing Color interaction
+Do not automatically include every subject from this list. Leave excluded subjects completely absent.
+
+VOICE
+Choose one light voice state: Direct Slightly tired Mildly bothered by one salon habit Interested in one technical detail Restrained Quietly pleased with a practical result
+The voice state should affect rhythm slightly. Do not announce it. Do not perform irritation in every section. Do not use obvious phrases to prove personality.
+Avoid repeatedly writing: I hate I love I always I never In my chair After fifteen years Other stylists may disagree I see this all the time
+Use first person only where it adds a real decision or preference.
+
+OPENING
+Start with one concrete hair behavior or technical decision.
+Suitable openings: An edge began separating during drying. A crown section rose after it was shortened. One product flattened the wrong area. A common layering choice weakened the shape. The haircut looked different after styling tension was removed.
+Do not begin with: A definition A complete article overview A motivational statement about age “Age is just a number” “When it comes to” “Choosing the right hairstyle” “Women over 50 deserve” A dramatic client transformation A generic claim about confidence
+
+HEADINGS
+Use three to five H2 headings per part. Headings must be plain labels.
+Examples: Keeping the Lower Edge Crown Length Fringe Width Mixed Gray Texture Long Hair Wash Day
+Avoid: The Secret to Fuller Hair Why I Keep Seeing This The Problem Nobody Discusses What Every Woman Must Know My Honest Opinion The Truth About Layers How to Transform Your Look
+Do not use the same heading across several articles when a natural alternative exists. Do not number headings unless requested.
+
+SECTION DESIGN
+Each section must have its own reason to exist. Do not force a section to contain all of the following: Claim Explanation Client example Trade-off Advice Summary
+Allow different section forms. Possible forms: Direct technical opinion Observation with no resolution Composite situation Explanation that ends when complete Practical routine Disagreement that remains unresolved Short section containing one narrow point
+Do not deliberately use each form exactly once. Do not create a repeatable sequence across parts.
+The pattern below may appear no more than once in a part: Claim, explanation, salon story, lesson.
+
+COMPOSITE SALON SITUATIONS
+Use zero, one, or two composite situations per part. Do not include a story merely because the article needs to sound personal.
+A composite situation must contain only details that change: The cutting choice The styling choice The available options The maintenance plan The outcome
+Useful details: Length Density Texture Growth direction Previous color Damage Heat routine Wash routine Desired appointment frequency Time limitation Need to tie hair back Glasses or hearing device placement An earlier haircut that limits the current choice
+Remove: Clothing Furniture Weather Drinks Wall decorations Time-of-day atmosphere Unrelated appearance Emotional reactions inserted only for realism
+Use the deletion test: If removing a detail does not change the choice, limitation, or outcome, remove it.
+Never begin a heading section with: “I had a client.” Do not end every situation with: A lesson A revelation A happy result A sentence explaining why the story mattered
+Possible endings: The client chose the less technically tidy option. The request remained impossible under the stated limits. The result improved only slightly. The disagreement continued. The appointment ended on a practical action. The story stops without interpretation.
+
+HUMAN EXPERIENCE ACCURACY
+Do not claim a composite situation literally happened to the writer. Prefer wording such as: One composite salon situation involved... A representative situation would be... A common version of this is... In appointments with this combination...
+When the user supplies a genuine firsthand experience, it may be written as a real memory without the composite label. Do not invent false testimonials or factual evidence.
+
+TECHNICAL WRITING
+Include useful technical detail, but do not explain every statement. Focus on observable behavior: The edge separates. The crown rises. One side collapses. A curl jumps shorter. Hair behind the ear bends outward. Product gathers fine strands into gaps. Heat damage is concentrated near the front. A wide fringe reduces temple density.
+Explain a technical point when the explanation changes the reader's understanding or choice. Leave obvious salon connections unstated sometimes. Do not define every salon term immediately. Do not turn the article into a textbook. Avoid fake scientific wording.
+
+OPINIONS
+Allow the stylist to make clear choices. Examples: Avoiding razor work on fragile ends. Preserving a weak perimeter. Leaving more crown length. Refusing to layer a section that lacks density. Choosing grow-out over a sharp first-day result.
+Do not balance every opinion with the opposing side. Do not repeatedly write: This isn't always wrong. It can work for some people. Another stylist might disagree. Of course, there are exceptions. Both choices have benefits.
+A real trade-off can be explained once when it materially affects the choice.
+
+UNCERTAINTY
+Uncertainty is optional. Use no more than two uncertainty moments in the full article. Include uncertainty only when it arises naturally from a precise technical observation. It must: Name the unresolved detail. Remain inside a paragraph. Last one or two sentences. Not become evidence of humility. Not helpfully resolve itself. Not return later.
+Avoid: I genuinely don't know. I'm still figuring out. I haven't landed on an answer. It doesn't resolve neatly. What I do know. I can't fully explain it. Nobody understands why.
+Do not insert uncertainty solely to sound human.
+
+FRICTION
+Friction is optional, not mandatory. A genuine disagreement may involve: A common layering habit An unrealistic reference image A maintenance expectation A stylist-client priority conflict A technically balanced cut the client dislikes A product routine that contradicts the preferred shape
+Do not resolve every disagreement into advice. Do not convert frustration into a motivational lesson. Do not place exactly one friction moment in every article.
+
+PARAGRAPH RHYTHM
+Vary paragraph length according to the thought. Use: Occasional one-sentence paragraphs Short paragraphs Medium paragraphs Longer paragraphs when necessary
+Do not follow a quota. Do not place a one-sentence emphasis paragraph after every explanation. Do not use more than two consecutive punch-line paragraphs. Avoid several consecutive paragraphs with the same sentence count or grammatical pattern. Vary paragraph openings naturally. Do not begin more than two consecutive paragraphs with the same word.
+Avoid repeatedly opening paragraphs with: The This Hair A I For
+
+SENTENCE RHYTHM
+Mix short and long sentences. Do not make every sentence polished into the same medium length. Do not stack three parallel structures repeatedly.
+Avoid excessive constructions such as: It can X, but it can also Y. This doesn't mean X. It means Y. Not X, but Y. Sometimes X. Sometimes Y. The goal isn't X. It's Y. Each of these may appear occasionally, but not as a recurring rhythm.
+Do not write a short quotable sentence every few paragraphs. Do not intentionally add errors. Use complete, natural grammar.
+
+CONTRACTIONS
+Use contractions where natural: don't doesn't didn't isn't wasn't weren't can't couldn't shouldn't it's that's there's I've I'd I'll I'm won't
+Do not force contractions into technical sentences where they sound awkward.
+
+LANGUAGE
+Use ordinary salon wording. Prefer: Keep weight at the bottom. Remove bulk underneath. The ends split apart. The crown sits flat. The front rises when dry. The side gets pushed forward. The curl shrinks. The hairline grows upward. The shape narrows.
+Avoid: Weight distribution architecture Mechanically Strategic enhancement Comprehensive approach Optimal solution Transformative Visual weight Fixed anchor point Consistent downward pull Compound effect Light-catching quality Hair life cycle Advanced methodology
+Do not explain hair using unnecessary physics language.
+
+BANNED WORDS AND PHRASES
+Avoid: Perfect Ideal Dive Delve Embark Unlock Discover Uncover Revolutionize Game-changer Tapestry Illuminate Unveil Pivotal Intricate Realm Leverage Harness Navigate Groundbreaking Cutting-edge Meticulous Comprehensive Furthermore Moreover In conclusion In today's world Ever-evolving Transformative Stunning Incredible Powerful Journey Towards When it comes to It's important to remember There is something for everyone Whether you're looking for This comprehensive guide Here's the thing The catch The good news is That's where it gets complicated Nobody talks about this That moment stuck with me I keep coming back to I hear this constantly Most clients are either X or Y Age is just a number Confidence at any age Embrace your beauty Timeless elegance
+Do not copy sentences from this prompt into the article. Do not use the long dash character in the article body.
+
+KEYWORD RULES
+Use the exact keyword no more than two times unless instructed otherwise. Use it naturally. Prefer: Once in or near the H1 Once later in the article
+Do not: Place it in every H2 Bold it repeatedly Force grammatically awkward wording throughout the article Repeat it in every part
+When the supplied keyword is grammatically awkward, preserve the exact keyword no more than once in a natural supporting sentence, and use a grammatically correct title.
+Example: Exact keyword: hair style for woman over 66 Natural title: Hairstyles for Women Over 66 That Keep Their Shape
+The exact phrase may appear once later if required for SEO.
+
+META DESCRIPTION
+Only Part 1 contains a meta description.
+Format: [META]: [Compelling, click-worthy meta description here (strictly 150-160 characters). It must include the main keyword "{keyword}" naturally. Do not use generic AI phrases like "Discover the best..." or "Explore these...". Focus on an active, opinionated hook.]
+
+PART DIFFERENTIATION
+Each part must feel related but not identical.
+Part 1: Begin with a specific cutting observation. Establish the central position once. Cover up to three technical subjects.
+Part 2: Begin directly with a different type of subject. Do not refer back to Part 1. Use a different balance of opinion, explanation, and examples.
+Part 3: Continue into maintenance, length, styling, color, or another related area. Do not summarize Parts 1 and 2. End on a specific practical decision or unfinished observation.
+Do not impose a fixed beat order.
+
+ENDINGS
+Parts 1 and 2: Stop naturally. Do not conclude. Do not preview the next part. Do not announce the stopping point.
+Part 3: Do not summarize. Do not provide a motivational ending. Do not restate the central position. Do not finish with a broad life lesson. End with a concrete salon action, remaining limitation, or narrow observation.
+Avoid repeatedly ending sections with short aphorisms.
+
+REPETITION AUDIT
+Before returning the article, silently check: Is the central position stated more than once? Does a section repeat an earlier section using different examples? Are several paragraphs using the same “X but Y” construction? Are short punch lines appearing too often? Does every concern receive an immediate solution? Does every story produce a lesson? Are transitions too neat? Are headings covering an exhaustive guide? Is the same trade-off language repeated? Does the voice sound consistently polished for too long? Revise any repeated pattern.
+
+NATURALNESS AUDIT
+Silently check: Are the details technically relevant? Is the writer proving expertise too often? Are composite situations labeled honestly? Is any “messiness” obviously planted? Are there random tangents inserted only to seem human? Does each section need to exist? Are some connections left for the reader to understand? Is every paragraph equally useful? Could one over-explained sentence be removed? Would a working stylist reasonably use this wording?
+Do not make every paragraph maximally useful. Natural writing can assume some reader understanding.
+
+TECHNICAL AUDIT
+Silently check: Are texture and density treated as different properties? Are color damage and natural gray texture kept distinct? Are medical causes of hair loss avoided? Are results described without guarantees? Are styling routines realistic? Do suggested cuts respect growth patterns and maintenance? Does any advice pretend cutting can create missing density? Are exact measurements plausible and used sparingly? Does the recommendation acknowledge the actual limitation when necessary?
+
+STRUCTURAL AUDIT
+Silently check: Are there no more than three main subjects per part? Are H2 headings plain? Do section lengths vary naturally? Is any part following the same internal order as another? Are stories used only where necessary? Is the article more selective than exhaustive? Are Part 1 and Part 2 free of conclusions? Does Part 3 end without a recap?
+
+DETECTOR DISCLAIMER
+Do not state or imply that the article is guaranteed to pass AI detection. Do not provide a fabricated human percentage. Do not claim the text was written by a human. When asked for an assessment, explain that detector results are inconsistent and evaluate observable writing patterns instead.
+
+OUTPUT FORMAT
+PART 1
+[META]: [compelling, click-worthy meta description strictly 150 to 160 characters containing "{keyword}"]
+[Natural Article Title]
+[Plain H2]
+[Minimum 1,000 words]
+
+PART 2
+[New Plain H2]
+[Minimum 1,000 words]
+
+PART 3
+[New Plain H2]
+[Minimum 1,000 words]
+End on a concrete observation or decision without a conclusion.
+
+GENERATION COMMAND
+Topic: {keyword}
+Exact keyword: {keyword}
+Audience: general audience searching for "{keyword}"
+Delivery: ALL THREE PARTS
+Optional angle: 
+Required real facts or experiences: 
+Excluded subjects: 
+Write the requested article now.
+`,
+
+  // Human Hairstylist Master Prompt v13.0
+  articleV13: `my keyword is {keyword} fill in every thing else your self i am sharing with you full prompt you must read full prompt then make asisments and plan what do to and how to do. make content in 3 parts sequentially. but you must read prompt properly.
+
+# HUMAN HAIRSTYLIST LONG-FORM MASTER PROMPT 13.0
+
+## PURPOSE
+Write a selective long-form hairstyle article from the perspective of a working hairstylist.
+The writing should feel grounded because the observations and cutting choices are specific. Do not make it appear human through intentional errors, decorative stories, forced uncertainty, random tangents, or visible anti-AI tricks.
+The article must be suitable for human review before publication.
+Do not claim that it will pass an AI detector.
+
+## INPUTS
+Topic: {keyword}
+Primary keyword: {keyword}
+Audience: general audience searching for "{keyword}"
+Delivery: ONE PART AT A TIME
+Optional angle: 
+Real salon facts supplied by user: 
+Excluded subjects: 
+
+## WORD COUNT
+Write between 2,000 and 2,700 words.
+Aim for approximately 2,200 to 2,450 words.
+Do not exceed 2,700 words.
+Do not add stories, product lists, repeated explanations, or summaries to reach the word count.
+
+## KEYWORD NATURALNESS
+Use the primary keyword in the H1 only when it reads naturally.
+Do not force the exact keyword into the article body.
+Do not write sentences such as:
+* For women searching for [exact keyword]
+* If you are looking for [exact keyword]
+* These [exact keyword] are
+* People interested in [exact keyword]
+* The best [exact keyword] include
+
+If the exact keyword is grammatically awkward:
+* Use a grammatically correct variation in the H1.
+* Use natural pronouns and related language in the body.
+* Do not include the awkward exact phrase merely to satisfy SEO.
+* Never interrupt a sentence to insert a search term.
+
+Maximum exact-keyword use:
+* Once in the H1.
+* Zero times in the body unless it fits without sounding like a search query.
+
+SEO must never be visible in the prose.
+
+## ARTICLE SHAPE
+Use seven or eight H2 sections.
+Do not use the same number automatically in every article.
+Choose the number according to how many distinct subjects deserve space.
+Do not display Part 1, Part 2, or Part 3 when Delivery is ALL TOGETHER.
+When Delivery is ONE PART AT A TIME:
+* Divide the headings roughly across three parts.
+* Stop naturally after each part.
+* Do not summarize.
+* Do not preview the next part.
+* Continue after the user says “Next Part.”
+
+## CENTRAL POSITION
+Silently choose one technical position that influences the article.
+Do not announce it as a thesis.
+Banned:
+* My central position is
+* My argument is
+* The main point is
+* The takeaway is
+* This article will show
+* What readers need to understand
+State the position naturally once, if it needs to be stated directly at all.
+Do not paraphrase it in every section.
+Do not restate it in the ending.
+
+## SUBJECT SELECTION
+Choose seven or eight distinct subjects.
+Each heading should have one clear purpose.
+Leave several valid subjects out.
+Do not create a complete guide.
+Possible subjects include:
+* Crown
+* Perimeter
+* Fringe
+* Temples
+* Nape
+* Natural curl
+* Natural wave
+* Gray texture
+* Density
+* Glasses
+* Tucking
+* Products
+* Wash day
+* Heat
+* Appointment timing
+* Grow-out
+* Long hair
+* Short hair
+Do not automatically select the most obvious SEO topics.
+
+## WRITER VOICE
+Write as a hairstylist with substantial practical experience.
+The writer notices:
+* How the hair behaves once dry
+* What happens after washing
+* How the shape grows
+* Where density is weaker
+* Where texture changes
+* Which routines the client will actually repeat
+The writer has preferences but does not turn every preference into a declaration.
+Use first person only when it adds:
+* A specific cutting decision
+* A refusal
+* A correction
+* A limitation
+* An opinion that affects the result
+Avoid repeated first-person phrases:
+* I prefer
+* I always
+* I never
+* I usually
+* In my chair
+* From my experience
+* After years in the salon
+* Other stylists may disagree
+* I see this all the time
+Do not mention the stylist’s years of experience in the article.
+
+## HUMAN EXPERIENCE
+Do not invent named clients, salon names, awards, credentials, or identifiable personal history.
+Use no more than one full composite salon example.
+A second example is allowed only if it is brief and materially different from the first.
+A full example must remain under 160 words.
+Do not label examples as:
+* A representative salon situation
+* One composite salon situation
+* Let me give an example
+* I had a client
+Enter the situation directly.
+Only include details affecting:
+* Length
+* Density
+* Texture
+* Growth direction
+* Existing damage
+* Styling habit
+* Appointment timing
+* Available cutting choices
+* Outcome
+Remove decorative details.
+
+## SECTION VARIATION
+Do not use one section formula repeatedly.
+Banned repeated formula:
+1. Polished opening claim
+2. Technical explanation
+3. Client anecdote
+4. Trade-off
+5. Practical advice
+6. Tidy final sentence
+Use different section forms.
+Possible forms:
+* Direct technical discussion with no story
+* Observation followed by a preference
+* Short section about one narrow issue
+* Practical routine
+* Composite salon example
+* Unresolved limitation
+* Section beginning mid-thought from the previous subject
+* Section that ends immediately when the technical point is complete
+No more than two sections may contain a full anecdotal sequence.
+No more than three sections may end with a short one-sentence emphasis line.
+
+## H2 OPENINGS
+Do not make every section begin with a polished thesis sentence.
+Across the article, vary H2 openings.
+Some sections may begin with:
+* A direct physical observation
+* A continuation from the previous subject
+* A practical detail
+* A question
+* A specific cutting action
+* A short sentence
+* A longer, less polished sentence that enters the subject immediately
+Avoid repeatedly opening sections with structures such as:
+* X is often...
+* X can...
+* The problem with X...
+* A good X...
+* X matters because...
+* X is usually...
+At least two H2 sections should begin without summarizing the entire section in the first sentence.
+
+## TECHNICAL DETAIL
+Use ordinary salon language.
+Prefer:
+* The crown rises
+* The ends separate
+* The fringe splits
+* The side pushes outward
+* The temple looks lighter
+* The nape grows upward
+* The curl shrinks
+* The section collapses
+* The hair gathers into pieces
+Avoid:
+* Mechanical distribution
+* Visual weight architecture
+* Strategic enhancement
+* Comprehensive solution
+* Optimal approach
+* Transformative technique
+* Fixed anchor point
+* Downward force
+* Hair life cycle
+* Advanced methodology
+Do not explain basic salon connections every time.
+Let the reader infer some cause and effect.
+When one sentence makes the point clearly, do not add another sentence translating it.
+
+## INFORMATION DENSITY
+Do not make every paragraph equally instructional.
+A paragraph may simply:
+* Describe what the hair does
+* State the stylist’s preference
+* Record a remaining limitation
+* Continue a technical thought
+* End without advice
+Do not automatically follow every problem with a solution.
+Do not include a takeaway after every example.
+
+## PRODUCT CONTROL
+Discuss products only where they directly affect the haircut.
+Use no more than two dedicated product passages in the full article.
+Do not list several product categories unless their different effects matter.
+Do not write a complete routine under multiple headings.
+
+## CONTRAST PATTERN LIMIT
+AI writing often relies on constant contrast.
+Limit repeated structures such as:
+* X looks good in the salon but fails at home
+* X creates lift but exposes scalp
+* X softens the hair but removes density
+* X works at first but grows badly
+* X is not the issue, Y is
+Trade-offs are allowed, but do not make every paragraph a two-sided analysis.
+The following constructions may each appear no more than once:
+* It isn’t X. It is Y.
+* This doesn’t mean X. It means Y.
+* Not X, but Y.
+* The goal isn’t X. It’s Y.
+* X can work, but...
+* That is the trade-off.
+* That is the limitation.
+* That matters more.
+* The result was not dramatic.
+
+## SHORT EMPHASIS LINES
+Use no more than five one-sentence paragraphs in the full article.
+No more than three may function as punch lines or philosophical endings.
+Do not repeatedly end sections with lines such as:
+* That was enough.
+* That mattered more.
+* I stopped cutting.
+* The hair decided.
+* That was the useful choice.
+* It still wasn't the photograph.
+Use them only when genuinely earned.
+
+## PARAGRAPHS
+Vary paragraph lengths according to the thought.
+Do not follow a predictable long paragraph, short punch line, long paragraph rhythm.
+Do not make every paragraph three or four sentences.
+Do not begin more than two consecutive paragraphs with the same word.
+Avoid repeatedly beginning with:
+* The
+* A
+* Hair
+* This
+* I
+* For
+Do not insert intentional spelling or grammar mistakes.
+
+## LANGUAGE
+Use contractions naturally.
+Avoid content-marketing language.
+Banned words and phrases:
+Age is just a number
+When it comes to
+Choosing the right
+The perfect hairstyle
+Dive into
+Delve into
+Discover
+Unlock
+Game-changer
+Comprehensive guide
+Furthermore
+Moreover
+In conclusion
+Here is the thing
+The catch
+The good news is
+My central position
+The main takeaway
+Nobody talks about this
+That moment stuck with me
+Confidence at any age
+Timeless style
+Transform your look
+For women searching for
+If you are looking for
+Everything you need to know
+Do not use the long dash character.
+Do not copy full sentences from this prompt.
+
+## OPENING
+Begin with a specific hair behavior, cutting action, or unexpected result.
+Do not begin with:
+* A definition
+* A broad statement about age
+* A confidence message
+* An article overview
+* A list of benefits
+* A promise
+* An SEO keyword sentence
+* A dramatic transformation
+
+## ENDING
+Do not add a conclusion heading.
+Do not summarize the headings.
+Do not repeat the central position.
+Do not finish with a broad statement about confidence, beauty, identity, or aging.
+End with:
+* A small cutting decision
+* A remaining limitation
+* A practical observation
+* A section deliberately left alone
+* The hair being checked after the finish is disturbed
+
+## INTERNAL AI-PATTERN AUDIT
+Before returning the article, silently check:
+### SEO Leakage
+* Is the exact keyword visible in an unnatural sentence?
+* Does any sentence sound like a Google search query?
+* Has the phrase “For women searching for...” appeared?
+* Is the keyword repeated only because the prompt requested it?
+Delete or rewrite any failure.
+
+### Formula
+* Does every H2 begin with a polished claim?
+* Does every section follow claim, explanation, example, lesson?
+* Does every issue receive advice?
+* Does every section close neatly?
+* Are stories appearing at predictable intervals?
+Break the pattern by removing material, not by adding random disorder.
+
+### Voice
+* Is the stylist calm and perfectly authoritative in every paragraph?
+* Is first person being used to prove expertise?
+* Are there too many crafted statements?
+* Are all transitions unusually smooth?
+* Can a formal sentence be made more direct?
+
+### Repetition
+* Are the same trade-offs being explained again?
+* Are reference photographs appearing too often?
+* Are density being redefined?
+* Is product advice duplicated?
+* Are several short endings performing the same function?
+
+### Length
+* Is any section present only to reach 2,000 words?
+* Can a repeated paragraph be removed?
+* Has the article exceeded 2,700 words?
+Revise before returning the article.
+
+## OUTPUT FORMAT
+[META]: [Natural 150 to 160 character description]
+
+# [Natural H1 using the keyword only if grammatically suitable]
+
+## [Plain H2]
+[Article content]
+
+Continue through seven or eight H2 sections.
+No visible part labels when generated together.
+No conclusion.
+
+## GENERATION COMMAND
+Topic: {keyword}
+Primary keyword: {keyword}
+Audience: general audience searching for "{keyword}"
+Delivery: ONE PART AT A TIME
+Optional angle: 
+Real salon facts supplied by user: 
+Excluded subjects: 
+Generate the article now.
+`,
+
+  // Human Hairstylist Master Prompt v14.0 (One-Go)
+  articleV14: `Write a selective, technically grounded hairstyle article from the perspective of a working hairstylist.
+
+Naturalness must come from precise observations, realistic limitations, and selective emphasis.
+
+Do not imitate a human by adding:
+
+Spelling mistakes
+Broken grammar
+Random tangents
+Decorative memories
+Fake emotional conflict
+Forced uncertainty
+Repeated punch lines
+A visible anti-AI checklist
+
+Do not promise or imply that the article will pass AI detection.
+
+INPUTS
+
+Topic: {keyword}
+Primary keyword: {keyword}
+Audience: general audience searching for "{keyword}"
+Delivery: ALL TOGETHER
+Optional angle: 
+Real salon facts supplied by user: 
+Excluded subjects: 
+
+LENGTH
+
+Write between 2,000 and 2,700 words.
+
+Aim for 2,150 to 2,450 words.
+
+Do not exceed 2,700 words.
+
+Do not create extra stories, product lists, summaries, or repeated explanations to reach the minimum.
+
+KEYWORD RULE
+
+Use the primary keyword only where it reads like normal English.
+
+Preferred placement:
+
+Once in the H1.
+
+Body use:
+
+Zero times by default.
+One use only when it fits naturally without resembling a search query.
+
+Never write:
+
+For women searching for [keyword]
+If you are looking for [keyword]
+People interested in [keyword]
+These [keyword] are
+The best [keyword]
+This guide to [keyword]
+When choosing [keyword]
+
+If the exact keyword is awkward:
+
+Correct the grammar in the title.
+Do not force the exact phrase into the body.
+Use natural nouns and pronouns afterward.
+
+SEO must not be visible in the prose.
+
+ARTICLE SIZE AND HEADINGS
+
+Use six or seven H2 headings.
+
+Choose the number according to the subject.
+
+Do not automatically use the same number for every article.
+
+Each H2 must focus on one main issue.
+
+Do not add visible Part 1, Part 2, or Part 3 labels when Delivery is ALL TOGETHER.
+
+For ONE PART AT A TIME:
+
+Divide the headings naturally across three parts.
+Stop without a conclusion.
+Continue when the user says “Next Part.”
+Do not preview future headings.
+Do not repeat earlier material.
+
+SUBJECT SELECTION
+
+Choose six or seven subjects that genuinely deserve space.
+
+Leave other valid subjects out.
+
+Do not build a complete guide.
+
+Possible subjects include:
+
+Crown
+Perimeter
+Nape
+Fringe
+Temple density
+Natural wave
+Curl shrinkage
+Gray texture
+Glasses
+Tucking
+Product amount
+Wash day
+Heat
+Grow-out
+Appointment timing
+Long hair
+Short hair
+
+Do not automatically choose the most common SEO subtopics.
+
+CENTRAL POSITION
+
+Silently choose one technical preference or position.
+
+Do not announce it as a thesis.
+
+Never write:
+
+My central position is
+My main argument is
+The main point is
+The takeaway is
+This article will explain
+What readers need to understand
+
+The position may appear once in ordinary language.
+
+Do not paraphrase it in every section.
+
+Do not return to it in the ending.
+
+WRITER VOICE
+
+Write as a working hairstylist with substantial practical experience.
+
+The writer notices:
+
+Dry behaviour
+Root direction
+Density
+Texture
+Shrinkage
+Product weight
+Appointment distance
+What the client actually does with the hair
+
+The voice may be direct, mildly irritated, restrained, or interested in one detail.
+
+Do not keep the same emotional emphasis in every paragraph.
+
+Use first person only when it adds:
+
+A cutting decision
+A refusal
+A correction
+A technical preference
+A limit that remains unresolved
+
+Avoid repeated phrases:
+
+I prefer
+I always
+I never
+I usually
+In my chair
+From my experience
+After years in the salon
+Other stylists may disagree
+I see this all the time
+
+No more than two consecutive paragraphs should contain first person.
+
+OPENING
+
+Begin with:
+
+A physical hair behaviour
+A cutting action
+A section moving after drying
+A result that changed after tension was released
+A specific area of the haircut
+
+Do not begin with:
+
+A definition
+A general statement about age
+Confidence language
+An overview
+A list of benefits
+A promise
+An SEO phrase
+A dramatic transformation
+
+H2 OPENINGS
+
+Do not begin every section with a polished editorial thesis.
+
+Across the article, vary openings between:
+
+A physical detail
+A time marker
+A cutting action
+A question
+A continuation from the previous thought
+A practical routine
+A brief direct sentence
+A less polished sentence that enters the subject mid-thought
+
+At least two H2 sections must begin without summarising the whole section in the first sentence.
+
+Avoid repeatedly beginning with:
+
+X is often...
+X can...
+The problem with X...
+X matters because...
+A good X...
+The best way...
+
+SECTION VARIATION
+
+Do not repeat this structure:
+
+Editorial claim
+Technical explanation
+Client story
+Trade-off
+Advice
+Tidy lesson
+
+Use different section forms.
+
+Allowed section forms:
+
+Technical observation with no story
+Practical routine
+Unresolved limitation
+Short opinion section
+One composite appointment
+Description with little advice
+Section beginning mid-process
+Section that stops as soon as the point is complete
+
+No more than one full composite appointment in the article.
+
+A second example may appear only as two or three sentences.
+
+SALON EXAMPLES
+
+A full composite appointment must remain under 170 words.
+
+Include only details affecting:
+
+Length
+Density
+Texture
+Growth direction
+Damage
+Routine
+Timing
+Available choices
+Outcome
+
+Do not include decorative details.
+
+Do not introduce it with:
+
+I had a client
+A representative salon situation
+One composite salon situation involved
+Let me give an example
+
+The example must not end with:
+
+A life lesson
+A complete transformation
+Proof that the stylist was right
+A neat reflection
+
+It may remain unfinished.
+
+TECHNICAL LANGUAGE
+
+Use ordinary salon wording:
+
+The crown rises.
+The fringe separates.
+The sides push outward.
+The temple looks lighter.
+The ends split into groups.
+The curl jumps shorter.
+The root grows upward.
+The top collapses.
+The nape loses its line.
+
+Avoid:
+
+Mechanical distribution
+Visual weight architecture
+Strategic enhancement
+Comprehensive solution
+Optimal approach
+Transformative method
+Fixed anchor point
+Downward force
+Hair life cycle
+Advanced methodology
+Light-catching quality
+
+Do not explain every salon connection.
+
+Allow the reader to infer some cause and effect.
+
+When one sentence already makes the point, do not translate it with another sentence.
+
+ADVICE LIMIT
+
+Do not solve every problem.
+
+Some paragraphs may only:
+
+Describe what happens
+State a preference
+Record a limitation
+Show an imperfect result
+End before advice is given
+
+At least one section should be mostly observational.
+
+At least one section should contain no product recommendation.
+
+At least one section should stop without a summarising final line.
+
+PRODUCT LIMIT
+
+Use no more than one dedicated product section.
+
+Products may be mentioned briefly elsewhere only when necessary.
+
+Do not list several categories unless their different effects change the haircut.
+
+Do not repeat the same product advice.
+
+CONTRAST LIMIT
+
+Do not build the entire article from paired contrasts.
+
+Avoid repeatedly comparing:
+
+Salon versus home
+Wet versus dry
+First day versus later growth
+Lift versus visible scalp
+Softness versus density
+Short versus long
+Product versus haircut
+
+These comparisons may appear, but not in every section.
+
+The following templates may each appear no more than once:
+
+It isn’t X. It is Y.
+This doesn’t mean X. It means Y.
+Not X, but Y.
+The goal isn’t X. It’s Y.
+X can work, but...
+That is the trade-off.
+That is the limitation.
+That matters more.
+The result was not dramatic.
+
+CRAFTED LINE LIMIT
+
+Limit sentences that sound designed as quotations.
+
+Examples of the pattern:
+
+Hair should still feel like hair.
+The roots decide everything.
+The cut has to survive real life.
+That was enough.
+The next wash tells the truth.
+
+No more than three short crafted lines may appear in the article.
+
+During editing, remove clever final sentences that only restate the section.
+
+PARAGRAPH RHYTHM
+
+Vary paragraph lengths according to the thought.
+
+Use no more than five one-sentence paragraphs.
+
+No more than three may act as emphasis lines.
+
+Do not repeat a long paragraph followed by a short punch line.
+
+Do not begin more than two consecutive paragraphs with the same word.
+
+Avoid repeatedly beginning with:
+
+The
+A
+Hair
+This
+I
+For
+
+Do not insert deliberate mistakes.
+
+LANGUAGE
+
+Use contractions naturally.
+
+Avoid content-marketing language.
+
+Banned:
+
+Age is just a number
+When it comes to
+Choosing the right
+The perfect hairstyle
+Dive into
+Delve into
+Discover
+Unlock
+Game-changer
+Comprehensive guide
+Furthermore
+Moreover
+In conclusion
+Here is the thing
+The catch
+The good news is
+My central position
+The main takeaway
+Nobody talks about this
+That moment stuck with me
+Confidence at any age
+Timeless style
+Transform your look
+For women searching for
+If you are looking for
+Everything you need to know
+
+Do not use the long dash character.
+
+Do not copy sentences from this prompt.
+
+META DESCRIPTION
+
+Write one meta description before the H1.
+
+Length: 150 to 160 characters including spaces.
+
+It must describe the actual article.
+
+Do not include:
+
+Complete guide
+Best hairstyles
+Perfect haircut
+Transform your look
+Discover
+Everything you need to know
+
+ENDING
+
+Do not add a conclusion heading.
+
+Do not summarise the headings.
+
+Do not repeat the central position.
+
+Do not end with confidence, age, identity, beauty, or motivation.
+
+End with:
+
+A small adjustment
+A section intentionally left alone
+An unfinished limitation
+A detail noticed after the finish is disturbed
+A decision to wait until the next wash
+
+REQUIRED INTERNAL AUDIT
+
+Before returning the article, silently complete three deletion passes.
+
+Pass One: SEO Leakage
+
+Delete or rewrite:
+
+Exact keyword phrases that sound like search queries
+“For women searching for...”
+Repeated keyword use
+SEO language in body sentences
+
+Pass Two: Formula
+
+Check:
+
+Do all H2s begin with claims?
+Does every section contain advice?
+Does every example end neatly?
+Are stories evenly spaced?
+Are conclusions too polished?
+Is every section the same approximate length?
+
+Remove structure rather than adding random messiness.
+
+Pass Three: Crafted Prose
+
+Delete:
+
+Repeated punch lines
+Neat restatements
+Clever final sentences
+Duplicate contrasts
+Sentences translating the previous sentence
+Unnecessary proof of expertise
+
+OUTPUT
+
+[META]: [150 to 160 characters]
+
+# [Natural H1]
+
+## [Plain H2]
+[Article body]
+
+Continue through six or seven H2 sections.
+
+No visible part labels when generated together.
+
+No conclusion.
+
+GENERATION COMMAND
+
+Topic: {keyword}
+Primary keyword: {keyword}
+Audience: general audience searching for "{keyword}"
+Delivery: ALL TOGETHER
+Optional angle: 
+Real salon facts supplied by user: 
+Excluded subjects: 
+Generate the article now.
 `
 };
-

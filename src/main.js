@@ -1,13 +1,37 @@
 import { generateContent } from './api.js';
+import { checkBridgeHealth } from './bridgeClient.js';
+import DOMPurify from 'dompurify';
 import { marked } from 'marked';
+
+// Safe localStorage JSON parser with fallback
+function safeParseJSON(key, fallback = null) {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch (e) {
+    console.warn(`Failed to parse localStorage key "${key}", using fallback.`, e);
+    return fallback;
+  }
+}
+
+// HTML escape helper for plain text inserted into the DOM
+function escapeHtml(text) {
+  if (text == null) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // STATE MANAGEMENT
 const STATE = {
   theme: localStorage.getItem('theme') || 'dark',
-  apiKey: localStorage.getItem('apiKey') || 'sk-Bo7Hug0OdQiDgapjSsF9oONIlKeekaOZiIpdNFrdbDvvDYGSXo67NydYMqtgvU7N',
+  apiKey: localStorage.getItem('apiKey') || '',
   provider: localStorage.getItem('provider') || 'opencode',
   model: localStorage.getItem('model') || 'big-pickle',
-  mode: localStorage.getItem('mode') || 'articleV15',
+  mode: localStorage.getItem('mode') || 'articleV10',
   keyword: '',
   supportingKeywords: '',
   activeWebsite: localStorage.getItem('activeWebsite') || '',
@@ -21,11 +45,17 @@ const STATE = {
   isBatchCancelled: false
 };
 
-// Validate mode selection to prevent stale values from older versions
-const VALID_MODES = ['articleV15', 'articleV86', 'listicle', 'quickTest', 'imageOnly'];
+const VALID_MODES = ['articleV15', 'articleV86', 'articleV10', 'articleV13', 'articleV14', 'listicle', 'quickTest', 'imageOnly'];
 if (!VALID_MODES.includes(STATE.mode)) {
-  STATE.mode = 'articleV15';
-  localStorage.setItem('mode', 'articleV15');
+  STATE.mode = 'articleV14';
+  localStorage.setItem('mode', 'articleV14');
+}
+
+// Pre-fill OpenCode key if provider is opencode and no key is stored
+if (STATE.provider === 'opencode' && (!STATE.apiKey || STATE.apiKey === 'null' || STATE.apiKey === 'undefined' || STATE.apiKey.trim() === '')) {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_OPENCODE_API_KEY) {
+    STATE.apiKey = import.meta.env.VITE_OPENCODE_API_KEY;
+  }
 }
 
 // DOM ELEMENTS
@@ -114,10 +144,11 @@ const MODELS = {
   ],
   opencode: [
     { value: 'big-pickle', text: 'OpenCode Big Pickle (Reasoning)' }
+  ],
+  bigPickleBridge: [
+    { value: 'chatgpt-browser', text: 'BigPickle → ChatGPT Browser' }
   ]
 };
-
-// INITIALIZATION
 function init() {
   // Check if active website is set. If not, show modal overlay.
   const modal = document.getElementById('website-selector-modal');
@@ -225,7 +256,7 @@ function loadWebsiteWorkspace(websiteName) {
   }
 
   // Load and render history for this specific site
-  STATE.history = JSON.parse(localStorage.getItem(`generation_history_${websiteName}`) || '[]');
+  STATE.history = safeParseJSON(`generation_history_${websiteName}`, []);
   renderHistory();
 
   // Clear current result displays to avoid mixing data
@@ -247,7 +278,7 @@ function clearCurrentDisplayOnly() {
 }
 
 function downloadZipPack() {
-  if (!STATE.activeArticleMarkdown) {
+  if (!STATE.activeArticleMarkdown && !STATE.activeBlogPromptsMarkdown && !STATE.activeRawPinterestPromptsList.length) {
     alert('No generated content available to package.');
     return;
   }
@@ -255,40 +286,41 @@ function downloadZipPack() {
   const cleanTitle = getCleanArticleTitle();
   const zip = new JSZip();
 
-  // File 1: Article (Markdown)
-  zip.file(`${cleanTitle}.md`, STATE.activeArticleMarkdown);
+  // File 1 & 2: Article (Markdown & Word Document) - only if article markdown exists
+  if (STATE.activeArticleMarkdown) {
+    zip.file(`${cleanTitle}.md`, STATE.activeArticleMarkdown);
 
-  // File 2: Article (Word Document)
-  const htmlContent = marked.parse(STATE.activeArticleMarkdown);
-  const docHtml = `
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head>
-      <title>${cleanTitle}</title>
-      <!--[if gte mso 9]>
-      <xml>
-        <w:WordDocument>
-          <w:View>Print</w:View>
-          <w:Zoom>100</w:Zoom>
-        </w:WordDocument>
-      </xml>
-      <![endif]-->
-      <style>
-        body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.6; color: #1e293b; padding: 1in; }
-        h1 { font-family: 'Georgia', serif; font-size: 24pt; font-weight: bold; color: #0f172a; margin-bottom: 12pt; }
-        h2 { font-family: 'Georgia', serif; font-size: 16pt; font-weight: bold; color: #1e293b; margin-top: 24pt; margin-bottom: 8pt; }
-        h3 { font-family: 'Georgia', serif; font-size: 13pt; font-weight: bold; color: #334155; margin-top: 18pt; margin-bottom: 6pt; }
-        p { margin-bottom: 10pt; text-align: justify; }
-        ul, ol { margin-bottom: 12pt; padding-left: 20pt; }
-        li { margin-bottom: 4pt; }
-        hr { border: 0; border-top: 1px solid #cbd5e1; margin: 24pt 0; }
-      </style>
-    </head>
-    <body>
-      ${htmlContent}
-    </body>
-    </html>
-  `;
-  zip.file(`${cleanTitle}.doc`, docHtml);
+    const htmlContent = DOMPurify.sanitize(marked.parse(STATE.activeArticleMarkdown));
+    const docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <title>${cleanTitle}</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.6; color: #1e293b; padding: 1in; }
+          h1 { font-family: 'Georgia', serif; font-size: 24pt; font-weight: bold; color: #0f172a; margin-bottom: 12pt; }
+          h2 { font-family: 'Georgia', serif; font-size: 16pt; font-weight: bold; color: #1e293b; margin-top: 24pt; margin-bottom: 8pt; }
+          h3 { font-family: 'Georgia', serif; font-size: 13pt; font-weight: bold; color: #334155; margin-top: 18pt; margin-bottom: 6pt; }
+          p { margin-bottom: 10pt; text-align: justify; }
+          ul, ol { margin-bottom: 12pt; padding-left: 20pt; }
+          li { margin-bottom: 4pt; }
+          hr { border: 0; border-top: 1px solid #cbd5e1; margin: 24pt 0; }
+        </style>
+      </head>
+      <body>
+        ${htmlContent}
+      </body>
+      </html>
+    `;
+    zip.file(`${cleanTitle}.doc`, docHtml);
+  }
 
   // File 3: Blog post prompts (Text)
   zip.file(`${cleanTitle} - Blog Post Image Prompts.txt`, STATE.activeBlogPromptsMarkdown);
@@ -339,11 +371,44 @@ function updateThemeIcon() {
 
 // PROVIDER CHANGES
 function handleProviderChange(e) {
-  STATE.provider = e.target.value;
+  const newProvider = e.target.value;
+  STATE.provider = newProvider;
   localStorage.setItem('provider', STATE.provider);
   updateModelOptions();
   STATE.model = DOM.modelSelect.value;
   localStorage.setItem('model', STATE.model);
+  updateBridgeHealthIndicator();
+
+  if (newProvider === 'opencode') {
+    if (!STATE.apiKey || STATE.apiKey.trim() === '') {
+      if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_OPENCODE_API_KEY) {
+        STATE.apiKey = import.meta.env.VITE_OPENCODE_API_KEY;
+        DOM.apiKeyInput.value = STATE.apiKey;
+        localStorage.setItem('apiKey', STATE.apiKey);
+      }
+    }
+  } else if (newProvider === 'bigPickleBridge') {
+    checkBridgeHealth().then(healthy => setBridgeHealthIndicator(healthy)).catch(() => setBridgeHealthIndicator(false));
+  }
+}
+
+function updateBridgeHealthIndicator() {
+  const existing = document.getElementById('bridge-health-indicator');
+  if (existing) existing.remove();
+}
+
+function setBridgeHealthIndicator(healthy) {
+  // Place the indicator next to the model select
+  const afterEl = DOM.modelSelect.parentElement || DOM.modelSelect;
+  const existing = document.getElementById('bridge-health-indicator');
+  if (existing) existing.remove();
+
+  const dot = document.createElement('span');
+  dot.id = 'bridge-health-indicator';
+  const color = healthy ? 'var(--success)' : 'var(--error)';
+  const title = healthy ? 'BigPickle bridge reachable' : 'BigPickle bridge unreachable';
+  dot.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-left:8px;box-shadow:0 0 6px ${color};" title="${title}"></span>`;
+  afterEl.appendChild(dot);
 }
 
 function updateModelOptions() {
@@ -412,7 +477,7 @@ async function handleGenerate() {
     alert('Please enter at least one target keyword.');
     return;
   }
-  if (!STATE.apiKey) {
+  if (!STATE.apiKey && STATE.provider !== 'bigPickleBridge') {
     alert('Please enter an API Key in the settings sidebar.');
     return;
   }
@@ -437,14 +502,17 @@ async function handleGenerate() {
     DOM.cancelBatchBtn.style.display = 'none';
   }
 
-  // Set up visual batch queue
-  DOM.batchQueueList.innerHTML = keywords.map((kw, idx) => `
+  // Set up visual batch queue (escape keyword text for safety)
+  DOM.batchQueueList.innerHTML = keywords.map((kw, idx) => {
+    const safeKw = escapeHtml(kw);
+    return `
     <div id="queue-item-${idx}" style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; background-color: rgba(255,255,255,0.01); border: 1px solid transparent; transition: all 0.2s ease;">
       <span class="queue-status-bullet" id="queue-bullet-${idx}" style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--text-muted); display: inline-block;"></span>
-      <span class="queue-keyword-name" style="flex-grow: 1; font-weight: 500;">${kw}</span>
+      <span class="queue-keyword-name" style="flex-grow: 1; font-weight: 500;">${safeKw}</span>
       <span class="queue-status-text" id="queue-status-text-${idx}" style="font-size: 0.65rem; color: var(--text-muted);">Waiting</span>
     </div>
-  `).join('');
+  `;
+  }).join('');
   DOM.batchQueueContainer.style.display = 'flex';
 
   let successCount = 0;
@@ -478,11 +546,18 @@ async function handleGenerate() {
     if (!existingBanner && DOM.resultsTabs.style.display !== 'none') {
       const banner = document.createElement('div');
       banner.id = 'generating-banner';
-      banner.innerHTML = `<i class="fas fa-spinner fa-spin"></i> New article generating for <strong>"${currentKeyword}"</strong> — your previous results are still here below`;
       banner.style.cssText = 'background: linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15)); border: 1px solid rgba(99,102,241,0.4); border-radius: 8px; padding: 10px 16px; font-size: 0.82rem; color: var(--primary); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;';
+      const bannerIcon = document.createElement('i');
+      bannerIcon.className = 'fas fa-spinner fa-spin';
+      banner.appendChild(bannerIcon);
+      banner.appendChild(document.createTextNode(' New article generating for '));
+      const bannerStrong = document.createElement('strong');
+      bannerStrong.textContent = `"${escapeHtml(currentKeyword)}"`;
+      banner.appendChild(bannerStrong);
+      banner.appendChild(document.createTextNode(' — your previous results are still here below'));
       DOM.resultsTabs.parentNode.insertBefore(banner, DOM.resultsTabs);
     }
-    
+
     startLiveTimer();
     resetPipelineVisuals();
     updateProgress(`Starting generation for "${currentKeyword}"...`, 5);
@@ -603,13 +678,21 @@ function logProgress(message, type = 'info') {
   const timestamp = new Date().toLocaleTimeString();
   const color = type === 'error' ? 'var(--error)' : 'var(--success)';
   const logEl = document.createElement('div');
-  logEl.innerHTML = `<span style="color: var(--text-muted)">[${timestamp}]</span> <span style="color: ${color}">${message}</span>`;
+  const timeSpan = document.createElement('span');
+  timeSpan.style.color = 'var(--text-muted)';
+  timeSpan.textContent = `[${timestamp}] `;
+  const msgSpan = document.createElement('span');
+  msgSpan.style.color = color;
+  msgSpan.textContent = message;
+  logEl.appendChild(timeSpan);
+  logEl.appendChild(msgSpan);
   DOM.progressLog.appendChild(logEl);
   DOM.progressLog.scrollTop = DOM.progressLog.scrollHeight;
 }
 
 // RENDER GENERATED RESULTS
 function renderResults(result) {
+  const modelLabel = result.responseModel || (STATE.provider === 'bigPickleBridge' ? 'ChatGPT Browser' : STATE.model);
   // Remove the generating banner if it exists
   const existingBanner = document.getElementById('generating-banner');
   if (existingBanner) existingBanner.remove();
@@ -653,7 +736,7 @@ function renderResults(result) {
   }
 
   // Render Formatted Article
-  DOM.articleBody.innerHTML = cleanArticle ? marked.parse(cleanArticle) : '';
+  DOM.articleBody.innerHTML = cleanArticle ? DOMPurify.sanitize(marked.parse(cleanArticle)) : '';
 }
 
 
@@ -673,7 +756,7 @@ function renderImagePrompts(rawPromptsText, targetType) {
   
   if (sections.length <= 1) {
     // Fallback if formatting was different
-    const fallbackHtml = `<div class="image-prompt-card"><div class="image-prompt-body">${rawPromptsText}</div></div>`;
+    const fallbackHtml = `<div class="image-prompt-card"><div class="image-prompt-body">${escapeHtml(rawPromptsText)}</div></div>`;
     if (targetType === 'pinterest') {
       DOM.pinterestPromptsBody.innerHTML = fallbackHtml;
       STATE.activeRawPinterestPromptsList = [rawPromptsText];
@@ -714,19 +797,19 @@ function renderImagePrompts(rawPromptsText, targetType) {
       }
     }
 
-    const escapedPrompt = encodeURIComponent(prompt);
+    const escapedPrompt = encodeURIComponent(prompt).replace(/'/g, '\\\'');
 
     cardsHtml.push(`
       <div class="image-prompt-card">
         <div class="image-prompt-header">
           <span class="image-prompt-number">Image ${i}</span>
-          <span class="badge badge-primary">${hairstyle}</span>
+          <span class="badge badge-primary">${escapeHtml(hairstyle)}</span>
         </div>
         <div class="image-prompt-meta" style="font-size: 0.82rem; margin-top: 8px;">
-          <div style="margin-bottom: 8px;"><strong>Full Prompt:</strong> <span style="color: var(--text-secondary);">${prompt}</span></div>
-          <div><strong>Negative Prompt:</strong> <span style="color: var(--text-muted); font-size: 0.78rem;">${negativePrompt}</span></div>
+          <div style="margin-bottom: 8px;"><strong>Full Prompt:</strong> <span style="color: var(--text-secondary);">${escapeHtml(prompt)}</span></div>
+          <div><strong>Negative Prompt:</strong> <span style="color: var(--text-muted); font-size: 0.78rem;">${escapeHtml(negativePrompt)}</span></div>
         </div>
-        <div class="image-prompt-body" id="prompt-text-${targetType}-${i}" style="display: none;">${prompt} Negative Prompt: ${negativePrompt}</div>
+        <div class="image-prompt-body" id="prompt-text-${targetType}-${i}" style="display: none;">${escapeHtml(prompt)} Negative Prompt: ${escapeHtml(negativePrompt)}</div>
         
         <!-- Live Image Preview Box -->
         <div class="image-preview-container" id="preview-container-${targetType}-${i}" style="display: none; margin-top: 12px; border-radius: var(--radius-sm); overflow: hidden; background-color: var(--bg-primary); border: 1px solid var(--border-color); aspect-ratio: 3/4; position: relative;">
@@ -813,7 +896,7 @@ function downloadWordDoc() {
     return;
   }
   const cleanTitle = getCleanArticleTitle();
-  const htmlContent = marked.parse(STATE.activeArticleMarkdown);
+  const htmlContent = DOMPurify.sanitize(marked.parse(STATE.activeArticleMarkdown));
   const docHtml = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head>
@@ -858,7 +941,10 @@ function showCopyToast(message) {
   if (existing) existing.remove();
   const toast = document.createElement('div');
   toast.id = 'copy-toast';
-  toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+  const icon = document.createElement('i');
+  icon.className = 'fas fa-check-circle';
+  toast.appendChild(icon);
+  toast.appendChild(document.createTextNode(` ${message}`));
   toast.style.cssText = `
     position: fixed; bottom: 32px; right: 32px; z-index: 9999;
     background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -990,7 +1076,7 @@ function renderHistory() {
     <div class="history-item ${item.mode === 'imageOnly' ? 'image-only-item' : ''}" data-id="${item.id}" title="Click to load this article" style="cursor: pointer;">
       <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%;">
         <div style="flex: 1; min-width: 0;">
-          <span class="title" style="display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: 600; font-size: 0.82rem;">${item.keyword}</span>
+          <span class="title" style="display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: 600; font-size: 0.82rem;">${escapeHtml(item.keyword)}</span>
           <div class="meta" style="display: flex; gap: 5px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
             <span class="badge" style="font-size: 0.55rem; padding: 2px 5px; ${
               item.mode === 'quickTest' ? 'background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;' :
@@ -1223,7 +1309,7 @@ function downloadAllHistoryAsZip() {
     folder.file(`${cleanTitle}.md`, entry.formattedArticle);
 
     // File 2: Word Document (.doc) - with CSS styled typography and margins
-    const htmlContent = marked.parse(entry.formattedArticle);
+    const htmlContent = DOMPurify.sanitize(marked.parse(entry.formattedArticle));
     const docHtml = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head>
@@ -1322,7 +1408,7 @@ async function downloadAllHistorySequential() {
     zip.file(`${cleanTitle}.md`, entry.formattedArticle);
 
     // File 2: Word Document (.doc) - with CSS styled typography and margins
-    const htmlContent = marked.parse(entry.formattedArticle);
+    const htmlContent = DOMPurify.sanitize(marked.parse(entry.formattedArticle));
     const docHtml = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head>

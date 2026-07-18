@@ -22,3 +22,6 @@ temp_api.mjs
 
 # Local Netlify folder
 .netlify
+
+# Chrome browser bridge sessions
+server/sessions/
