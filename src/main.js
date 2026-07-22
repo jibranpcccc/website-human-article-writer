@@ -416,8 +416,10 @@ function setBridgeHealthIndicator(healthy) {
 }
 
 function updateModelOptions() {
-  const options = MODELS[STATE.provider] || [];
-  DOM.modelSelect.innerHTML = options.map(opt => `<option value="${opt.value}">${opt.text}</option>`).join('');
+  const options = MODELS[STATE.provider] || MODELS.bigPickleBridge || [];
+  if (DOM.modelSelect && options.length > 0) {
+    DOM.modelSelect.innerHTML = options.map(opt => `<option value="${opt.value}">${opt.text}</option>`).join('');
+  }
 }
 
 // MODE CHANGES
