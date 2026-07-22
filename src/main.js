@@ -29,9 +29,9 @@ function escapeHtml(text) {
 const STATE = {
   theme: localStorage.getItem('theme') || 'dark',
   apiKey: localStorage.getItem('apiKey') || '',
-  provider: localStorage.getItem('provider') || 'opencode',
-  model: localStorage.getItem('model') || 'big-pickle',
-  mode: localStorage.getItem('mode') || 'articleV10',
+  provider: localStorage.getItem('provider') || 'bigPickleBridge',
+  model: localStorage.getItem('model') || 'chatgpt-browser',
+  mode: localStorage.getItem('mode') || 'articleV86',
   keyword: '',
   supportingKeywords: '',
   activeWebsite: localStorage.getItem('activeWebsite') || '',
@@ -47,8 +47,8 @@ const STATE = {
 
 const VALID_MODES = ['articleV15', 'articleV86', 'articleV10', 'articleV13', 'articleV14', 'listicle', 'quickTest', 'imageOnly'];
 if (!VALID_MODES.includes(STATE.mode)) {
-  STATE.mode = 'articleV14';
-  localStorage.setItem('mode', 'articleV14');
+  STATE.mode = 'articleV86';
+  localStorage.setItem('mode', 'articleV86');
 }
 
 // Pre-fill OpenCode key if provider is opencode and no key is stored
