@@ -227,6 +227,10 @@ window.switchWebsite = function(websiteName) {
   showCopyToast(`Switched to ${websiteName === 'tressatlas' ? 'TressAtlas' : 'TressCrew'} workspace.`);
 };
 
+window.loadWebsiteWorkspace = function(websiteName) {
+  loadWebsiteWorkspace(websiteName);
+};
+
 function loadWebsiteWorkspace(websiteName) {
   STATE.activeWebsite = websiteName;
   localStorage.setItem('activeWebsite', websiteName);
