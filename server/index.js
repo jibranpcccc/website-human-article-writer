@@ -15,11 +15,11 @@ app.get('/health', (req, res) => {
 // Enqueue a BigPickle job
 app.post('/api/bigpickle', async (req, res) => {
   try {
-    const { prompt, modelLabel, agent } = req.body;
+    const { prompt, modelLabel, agent, mode } = req.body;
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'Missing or invalid prompt.' });
     }
-    const { jobId } = await dispatchJob({ prompt, modelLabel, agent });
+    const { jobId } = await dispatchJob({ prompt, modelLabel, agent, mode });
     res.json({ jobId, status: 'queued' });
   } catch (err) {
     console.error('[server] POST /api/bigpickle error:', err);

@@ -1,90 +1,113 @@
 @echo off
+setlocal enabledelayedexpansion
 cd /d "%~dp0"
-chcp 65001 >nul
-setlocal enabledelayedexpanded
+title BigPickle Article Writer Launcher
+
+cls
+echo ============================================================
+echo  BigPickle ChatGPT Article Writer Launcher
+echo ============================================================
+echo.
+
+:: 1) Check Node.js
+where node >nul 2>nul
+if %errorlevel% neq 0 (
+  echo ERROR: Node.js is not installed on this computer!
+  echo.
+  echo To fix this:
+  echo 1. Download and install Node.js from: https://nodejs.org/
+  echo 2. After installing, re-run this run-all.bat file.
+  echo.
+  pause
+  exit /b 1
+)
+
+:: 2) Check dependencies
+if not exist "%~dp0node_modules\vite" (
+  echo [Info] Installing required dependencies...
+  call npm install
+  if %errorlevel% neq 0 (
+    echo.
+    echo ERROR: npm install failed. Please check your internet connection.
+    pause
+    exit /b 1
+  )
+)
+
+:: 3) Locate Chrome
+set CHROME="C:\Program Files\Google\Chrome\Application\chrome.exe"
+if not exist %CHROME% (
+  set CHROME="%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
+)
+if not exist %CHROME% (
+  set CHROME="C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+)
+
+if not exist %CHROME% (
+  echo ERROR: Google Chrome was not found on this computer.
+  echo Please install Google Chrome from https://www.google.com/chrome/ and try again.
+  pause
+  exit /b 1
+)
 
 set CDP_PORT=19321
 set BRIDGE_PORT=19322
 set VITE_PORT=19323
 set SESSION_DIR=%~dp0server\sessions\chrome-cdp-19321
-set CHROME="C:\Program Files\Google\Chrome\Application\chrome.exe"
-
-if not exist %CHROME% (
-  set CHROME="%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
-)
-
-cls
-echo ============================================================
-echo  BigPickle ChatGPT Browser Bridge Launcher
-
-echo ============================================================
-echo.
-echo Ports: CDP=%CDP_PORT%  Bridge=%BRIDGE_PORT%  UI=%VITE_PORT%
-echo.
-
-if not exist %CHROME% (
-  echo ERROR: Could not find chrome.exe. Please install Google Chrome.
-  pause
-  exit /b 1
-)
 
 :choose_mode
 cls
 echo ============================================================
-echo  BigPickle ChatGPT Browser Bridge Launcher
-
+echo  BigPickle ChatGPT Article Writer Launcher
 echo ============================================================
 echo.
-echo Choose how Chrome should run:
+echo Choose Chrome mode:
 echo.
-echo  1) Visible browser window  ^(recommended^)
-echo     - Easiest for logging in to ChatGPT the first time.
-echo     - You can see the prompt being sent and the reply typing.
+echo  1. Visible browser window  [RECOMMENDED]
+echo     - Opens Chrome so you can log into ChatGPT.
 echo.
-echo  2) Headless browser  ^(advanced^)
-echo     - Runs Chrome in the background with no window.
-echo     - Only works if you are ALREADY logged in to ChatGPT
-echo       in the session folder, otherwise it will fail.
+echo  2. Headless browser  [BACKGROUND]
+echo     - Runs Chrome in background.
 echo.
-choice /c 12 /n /m "Select mode [1/2]: "
-if errorlevel 2 (
+set /p MODE_CHOICE="Select mode [1 or 2]: "
+
+if "%MODE_CHOICE%"=="2" (
   set CHROME_MODE=headless
-  set CHROME_FLAGS=--headless=new --remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check
-  echo.
+  set CHROME_FLAGS=--headless=new --remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check --disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching
   echo [Mode] HEADLESS selected.
-) else if errorlevel 1 (
-  set CHROME_MODE=visible
-  set CHROME_FLAGS=--remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check
-  echo.
-  echo [Mode] VISIBLE browser selected.
 ) else (
-  goto choose_mode
+  set CHROME_MODE=visible
+  set CHROME_FLAGS=--remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check --disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching
+  echo [Mode] VISIBLE selected.
 )
 
 if not exist "%SESSION_DIR%" mkdir "%SESSION_DIR%"
 
-:: 1) Launch Chrome with CDP
-echo [1/2] Launching Chrome ^(%CHROME_MODE%^) on port %CDP_PORT%...
-start "" %CHROME% %CHROME_FLAGS% "https://chat.openai.com"
-timeout /t 2 /nobreak >nul
+:: 4) Launch Chrome
+echo.
+echo [1/3] Launching Chrome on port %CDP_PORT%...
+start "" %CHROME% %CHROME_FLAGS% "https://chatgpt.com"
 
-:: 2) Set Environment Variables
-set BIGPICKLE_PORT=%BRIDGE_PORT%
-set BIGPICKLE_CDP_HOST=http://127.0.0.1:%CDP_PORT%
-set VITE_BIGPICKLE_BRIDGE=http://127.0.0.1:%BRIDGE_PORT%
-if "%CHROME_MODE%"=="headless" (
-  set BIGPICKLE_HEADLESS=true
-) else (
-  set BIGPICKLE_HEADLESS=false
+:: 5) Open Browser UI after 6 seconds
+start /b cmd /c "timeout /t 6 /nobreak >nul && start http://127.0.0.1:%VITE_PORT%/"
+
+echo [2/3] Starting servers...
+echo.
+echo ============================================================
+echo  INSTRUCTIONS:
+echo  1. In the Chrome window, LOG IN to ChatGPT if prompted.
+echo  2. The Web App will open automatically at:
+echo     http://127.0.0.1:%VITE_PORT%/
+echo  3. Keep this terminal window OPEN while generating.
+echo ============================================================
+echo.
+
+:: 6) Start Servers via pure Node.js launcher
+node server/startAll.js
+
+if %errorlevel% neq 0 (
+  echo.
+  echo [Notice] Server process exited with code %errorlevel%.
 )
 
-:: 3) Open browser UI
-echo Opening http://127.0.0.1:%VITE_PORT%/
-start "" "http://127.0.0.1:%VITE_PORT%/"
-
-:: 4) Run both services concurrently in the same terminal window
-echo [2/2] Starting bridge server and Vite UI concurrently...
-npx concurrently --kill-others -n "Bridge,Vite-UI" -c "magenta,blue" "node server/index.js" "npx vite --host 127.0.0.1 --port %VITE_PORT% --strictPort"
-
-endlocal
-
+pause

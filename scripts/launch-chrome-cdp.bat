@@ -21,6 +21,6 @@ echo Launching Chrome with remote debugging on port %CDP_PORT%...
 echo Log in to ChatGPT in this window, then run run-all.bat.
 echo.
 
-start "" %CHROME% --remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check "https://chat.openai.com"
+start "" %CHROME% --remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check "https://chatgpt.com"
 
 endlocal

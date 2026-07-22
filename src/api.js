@@ -742,27 +742,56 @@ Keyword: ${keyword}`;
 
   // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest and articleV15 modes)
   let formattedArticle = finalArticleText;
-  if (!fromBridge && 
-      mode !== 'quickTest' && 
-      mode !== 'articleV15' && 
-      mode !== 'imageOnly' && 
-      mode !== 'articleV10' && 
-      mode !== 'articleV13' && 
-      mode !== 'articleV14' && 
+
+  // Stage 2A: For bridge-generated articles (V86/V13), use Mistral for heading formatting
+  if (fromBridge && (mode === 'articleV86' || mode === 'articleV13') && hasMistralKeys) {
+    onProgress('Format & SEO: Adding headings and paragraph structure (Mistral)...', 75);
+    const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
+    const mistralKey = getMistralKey(0);
+    let rawFormatted = await callAPI({
+      provider: 'mistral',
+      baseUrl: '/api-mistral/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
+      model: 'mistral-small-latest',
+      systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
+      messages: [{ role: 'user', content: formattingPrompt }],
+      onReasoning: (text) => { if (onReasoning) onReasoning(text, 'Format & SEO'); }
+    });
+
+    if (rawFormatted) {
+      // Strip common AI conversational preambles
+      rawFormatted = rawFormatted.replace(/^(?:Here's|Here is|Below is|Sure|Certainly)[^\n]*\n+/i, '').replace(/^---+\n+/i, '').trim();
+      formattedArticle = rawFormatted;
+    }
+  }
+
+  // Stage 2B: For direct API articles (non-bridge), use same provider for heading formatting
+  if (!fromBridge &&
+      mode !== 'quickTest' &&
+      mode !== 'articleV15' &&
+      mode !== 'imageOnly' &&
+      mode !== 'articleV10' &&
+      mode !== 'articleV13' &&
+      mode !== 'articleV14' &&
       mode !== 'articleV86') {
     onProgress('Reformatting article structure (Applying Heading Making System)...', 75);
     const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
-    formattedArticle = await callAPI({
+    let rawFormatted = await callAPI({
       provider,
       baseUrl,
       headers,
       model: apiModel,
-      systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly.',
+      systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
       messages: [{ role: 'user', content: formattingPrompt }],
       onReasoning: (text) => {
         if (onReasoning) onReasoning(text, 'Pinterest Mobile Formatting');
       }
     });
+
+    if (rawFormatted) {
+      rawFormatted = rawFormatted.replace(/^(?:Here's|Here is|Below is|Sure|Certainly)[^\n]*\n+/i, '').replace(/^---+\n+/i, '').trim();
+      formattedArticle = rawFormatted;
+    }
   }
 
   // Wait for background image generations to complete

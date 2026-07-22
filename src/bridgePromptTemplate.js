@@ -33,14 +33,11 @@ that is fine. You are not writing a guide.
 OUTPUT STRUCTURE
 ════════════════════════════════════════
 
-3 parts. Each part = 1000 words minimum.
-Full article must be 3000 words minimum total.
-STOP after Part 1. Wait for "Next Part."
-After Part 2, STOP and wait for "Next Part."
-When the user says "Next Part" after Part 2, write Part 3.
-No conclusion at end of Part 1.
-No conclusion at end of Part 2.
-No announcement of what comes next.
+Write the COMPLETE ~3000 word article in ONE single response.
+Target length: strictly between 2,800 and 3,100 words total (NEAREST TO 3000 WORDS MAX).
+Write continuously without stopping.
+Do NOT write "Part 1", "Part 2", "Next Part", or any continuation markers.
+No summary or philosophical bow-tie ending at the end.
 
 ════════════════════════════════════════
 PRE-WRITING CONSTRAINTS (REQUIRED)
@@ -587,7 +584,7 @@ If yes, the humanity is in the rules not the writing.
 Rewrite until the answer is no.
 
 ════════════════════════════════════════
-OUTPUT FORMAT FOR PART 1
+OUTPUT FORMAT
 ════════════════════════════════════════
 
 [META]: 150-160 char meta description here.
@@ -596,30 +593,10 @@ Article Title Here (H1)
 
 First H2 Heading Here
 
-[Body text — 1000 words minimum. STOP after Part 1.]
+[Body text — strictly between 2,800 and 3,100 words total (NEAREST TO 3000 WORDS MAX)]
 
 ════════════════════════════════════════
-OUTPUT FORMAT FOR PART 2
-════════════════════════════════════════
-
-[Continue article directly. Do not repeat meta description. Do not repeat H1.]
-
-First H2 Heading Here
-
-[Body text — 1000 words minimum. STOP after Part 2.]
-
-════════════════════════════════════════
-OUTPUT FORMAT FOR PART 3
-════════════════════════════════════════
-
-[Continue article directly. Do not repeat meta description. Do not repeat H1.]
-
-First H2 Heading Here
-
-[Body text — 1000 words minimum. Part 3 may end naturally, but do not use a polished conclusion, summary, or philosophical bow-tie ending.]
-
-════════════════════════════════════════
-START — WRITE PART 1 ONLY (1000 words minimum)
+START — WRITE FULL ARTICLE NOW (2,800 to 3,100 words)
 ════════════════════════════════════════
 
 Topic/Keyword: [INSERT KEYWORD HERE]`;

@@ -44,7 +44,8 @@ export async function getPage() {
   }
 
   if (!page.url().includes('chatgpt.com')) {
-    await page.goto(CHATGPT_URL, { waitUntil: 'networkidle' });
+    await page.goto(CHATGPT_URL, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
   }
   return page;
 }
@@ -102,7 +103,7 @@ async function enableTemporaryChat(page) {
   if (!url.includes('temporary-chat=true')) {
     const newUrl = new URL(url);
     newUrl.searchParams.set('temporary-chat', 'true');
-    await page.goto(newUrl.toString(), { waitUntil: 'networkidle' });
+    await page.goto(newUrl.toString(), { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(500);
   }
 
@@ -154,23 +155,33 @@ async function clickSendOrPressEnter(page, editor) {
   }
 }
 
-async function sendConversationTurn(page, text, timeoutMs = DEFAULT_TIMEOUT_MS) {
-  const editor = await waitForPromptArea(page, 30000);
-  await clearEditor(editor, page);
-
-  try {
-    await editor.fill(text);
-  } catch (fillErr) {
-    console.log('[driver] editor.fill failed, falling back to DOM paste:', fillErr.message);
-    await page.evaluate((t) => {
-      const el = document.activeElement;
-      if (el && el.isContentEditable) {
+async function setPromptTextInstantly(page, text) {
+  const editor = await waitForPromptArea(page, 15000);
+  await page.evaluate((t) => {
+    const el = document.querySelector('#prompt-textarea') || 
+               document.querySelector('[data-testid="prompt-textarea"]') ||
+               document.querySelector('div[contenteditable="true"]');
+    if (el) {
+      el.focus();
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      
+      const success = document.execCommand('insertText', false, t);
+      if (!success || !el.innerText || el.innerText.length < 5) {
         el.innerText = t;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: t }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
       }
-    }, text);
-  }
+    }
+  }, text);
+  return editor;
+}
 
+async function sendConversationTurn(page, text, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  const editor = await setPromptTextInstantly(page, text);
   await page.waitForTimeout(300);
   await clickSendOrPressEnter(page, editor);
   await waitForResponseComplete(page, timeoutMs);
@@ -185,57 +196,42 @@ function stripDuplicateH1AndMeta(text) {
     .trim();
 }
 
-async function selectMediumIntelligence(page) {
+export async function selectMediumIntelligence(page) {
   try {
     console.log('[driver] checking intelligence selector...');
-    // Find the toggle button (it might say "High", "Medium", "Instant", or "GPT-5.6")
-    const selectorButton = await page.evaluateHandle(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      return buttons.find(b => {
-        const text = (b.innerText || b.textContent || '').trim();
-        return /^(High|Medium|Instant|GPT-5\.\d+|GPT-\d\.\d+)/i.test(text);
-      });
+
+    const pill = page.locator('button, [class*="composer-pill"]').filter({
+      hasText: /^(High|Instant|Low|Standard|Auto)$/i
     });
 
-    if (selectorButton && await selectorButton.asElement()) {
-      const buttonText = await selectorButton.evaluate(el => el.innerText || el.textContent);
-      console.log('[driver] found intelligence selector button, current value:', buttonText.trim());
-
-      // If it's already "Medium", do nothing!
-      if (/Medium/i.test(buttonText)) {
+    const count = await pill.count();
+    if (count === 0) {
+      const isMedium = await page.locator('button, [class*="composer-pill"]').filter({ hasText: /^Medium$/i }).count();
+      if (isMedium > 0) {
         console.log('[driver] intelligence is already set to Medium.');
-        return;
-      }
-
-      // Click the button to open the dropdown menu
-      await selectorButton.click();
-      await page.waitForTimeout(500);
-
-      // Now click on the "Medium" option in the dropdown list
-      const mediumOptionClicked = await page.evaluate(() => {
-        // Look for any elements with text "Medium" inside menu items/dropdown
-        const elements = Array.from(document.querySelectorAll('div, span, button, li, a'));
-        const medium = elements.find(el => {
-          const text = (el.innerText || el.textContent || '').trim();
-          return text === 'Medium';
-        });
-        if (medium) {
-          medium.click();
-          return true;
-        }
-        return false;
-      });
-
-      if (mediumOptionClicked) {
-        console.log('[driver] successfully switched intelligence selector to Medium.');
-        await page.waitForTimeout(500);
       } else {
-        console.log('[driver] warning: "Medium" option not found in intelligence menu.');
-        // close the dropdown by clicking the button again
-        await selectorButton.click();
+        console.log('[driver] intelligence selector button not found.');
       }
+      return;
+    }
+
+    const currentVal = (await pill.first().innerText().catch(() => '')).trim();
+    console.log('[driver] found intelligence selector button, current value:', currentVal);
+
+    await pill.first().click();
+    await page.waitForTimeout(600);
+
+    const mediumItem = page.locator('[role="menuitem"], [role="menuitemradio"], [role="option"], div, span, button').filter({
+      hasText: /^Medium$/i
+    }).last();
+
+    if (await mediumItem.count() > 0) {
+      await mediumItem.click({ force: true });
+      console.log('[driver] successfully switched intelligence selector to Medium.');
+      await page.waitForTimeout(500);
     } else {
-      console.log('[driver] intelligence selector button not found.');
+      console.log('[driver] warning: "Medium" option not found in intelligence menu.');
+      await page.keyboard.press('Escape').catch(() => {});
     }
   } catch (err) {
     console.log('[driver] error selecting Medium intelligence:', err.message);
@@ -243,18 +239,30 @@ async function selectMediumIntelligence(page) {
 }
 
 async function prepareChatSession(page) {
-  // 1. Refresh ChatGPT page with temporary-chat enabled
-  console.log('[driver] navigating to fresh temporary chat to refresh page...');
-  await page.goto('https://chatgpt.com/?temporary-chat=true', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1500);
+  if (!page.url().includes('chatgpt.com')) {
+    console.log('[driver] navigating to ChatGPT...');
+    await page.goto('https://chatgpt.com/?temporary-chat=true', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
+  } else {
+    // Click 'New chat' button to open a fresh session instantly
+    const newChatClicked = await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="create-new-chat-button"]') ||
+                  Array.from(document.querySelectorAll('a, button')).find(b => (b.innerText || '').trim() === 'New chat');
+      if (btn) {
+        btn.click();
+        return true;
+      }
+      return false;
+    });
+    if (!newChatClicked) {
+      await page.goto('https://chatgpt.com/?temporary-chat=true', { waitUntil: 'domcontentloaded' });
+    }
+    await page.waitForTimeout(500);
+  }
 
-  // 2. Ensure temporary chat is fully enabled
   await enableTemporaryChat(page);
-
-  // 3. Try to select "Medium" intelligence for faster response
+  await waitForPromptArea(page, 15000);
   await selectMediumIntelligence(page);
-
-  // 4. Detect the active model
   detectedModel = await detectActiveModel(page);
   console.log('[driver] active model:', detectedModel);
 }
@@ -265,9 +273,9 @@ export async function sendThreePartPrompt(page, { prompt, timeoutMs = DEFAULT_TI
   // Part 1: send full master prompt with keyword
   const part1 = await sendConversationTurn(page, prompt, timeoutMs);
   // Part 2
-  const part2 = await sendConversationTurn(page, 'Next Part.', timeoutMs);
+  const part2 = await sendConversationTurn(page, 'Next Part. Write Part 2 now (~950 words, maximum 1000 words).', timeoutMs);
   // Part 3
-  const part3 = await sendConversationTurn(page, 'Next Part.', timeoutMs);
+  const part3 = await sendConversationTurn(page, 'Next Part. Write Part 3 now (~950 words, maximum 1000 words, completing the ~3000-word article).', timeoutMs);
 
   const cleanPart2 = stripDuplicateH1AndMeta(part2);
   const cleanPart3 = stripDuplicateH1AndMeta(part3);
@@ -283,54 +291,9 @@ export async function sendPrompt(page, { prompt, timeoutMs = DEFAULT_TIMEOUT_MS 
 
   await prepareChatSession(page);
 
-  const editor = await waitForPromptArea(page, 15000);
-
-  // Paste-style fill: clear and set the whole prompt at once
-  await editor.evaluate((el) => {
-    el.focus();
-    const sel = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    document.execCommand('delete', false);
-  });
-  await page.waitForTimeout(200);
-
-  // Use Playwright fill if it works on the contenteditable; otherwise clipboard-style
-  try {
-    await editor.fill(prompt);
-  } catch (fillErr) {
-    console.log('[driver] editor.fill failed, falling back to clipboard paste', fillErr.message);
-    await page.evaluate((text) => {
-      const el = document.activeElement;
-      if (el && el.isContentEditable) {
-        el.innerText = text;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    }, prompt);
-  }
-
+  const editor = await setPromptTextInstantly(page, prompt);
   await page.waitForTimeout(300);
-
-  // Try clicking send button; fall back to Enter key
-  const sendClicked = await page.evaluate(() => {
-    const send = Array.from(document.querySelectorAll('button')).find(
-      b =>
-        (b.getAttribute('aria-label') || '').toLowerCase().includes('send') ||
-        b.getAttribute('data-testid') === 'send-button'
-    );
-    if (send && !send.disabled) {
-      send.click();
-      return true;
-    }
-    return false;
-  });
-
-  if (!sendClicked) {
-    await editor.press('Enter');
-  }
+  await clickSendOrPressEnter(page, editor);
 
   await waitForResponseComplete(page, timeoutMs);
   const responseText = await getLastResponse(page);
@@ -339,29 +302,71 @@ export async function sendPrompt(page, { prompt, timeoutMs = DEFAULT_TIMEOUT_MS 
 
 export async function waitForResponseComplete(page, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const start = Date.now();
+  await page.waitForTimeout(2000); // give ChatGPT a moment to start generating
+
   let lastLength = 0;
   let stable = 0;
 
   while (Date.now() - start < timeoutMs) {
     await page.waitForTimeout(1500);
+
+    // Check if ChatGPT is still generating or thinking (Stop button active)
+    const isGenerating = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const stopBtn = buttons.find(b => {
+        const label = (b.getAttribute('aria-label') || '').toLowerCase();
+        const testId = (b.getAttribute('data-testid') || '').toLowerCase();
+        return label.includes('stop') || testId.includes('stop');
+      });
+      return !!stopBtn;
+    });
+
+    if (isGenerating) {
+      stable = 0; // still generating, keep waiting
+      continue;
+    }
+
     const current = await getLastResponse(page);
-    if (current.length > 0 && current.length === lastLength) {
+    if (current.length > 50 && current.length === lastLength) {
       stable++;
-      if (stable >= 3) return;
+      if (stable >= 3) return; // finished and text length is stable
     } else {
       stable = 0;
       lastLength = current.length;
     }
   }
-  // timeout but still return whatever we have
 }
 
 export async function getLastResponse(page) {
   return page.evaluate(() => {
-    const nodes = document.querySelectorAll('[data-message-author-role="assistant"]');
-    if (!nodes.length) return '';
-    const last = nodes[nodes.length - 1];
-    return last.innerText || '';
+    // 1. Check ProseMirror / writing-block editor containers (Canvas mode)
+    const proseMirror = Array.from(document.querySelectorAll('.ProseMirror, [data-writing-block-fullscreen-editor-region="true"], [class*="writing-block-editor"]'));
+    if (proseMirror.length) {
+      const text = (proseMirror[proseMirror.length - 1].innerText || proseMirror[proseMirror.length - 1].textContent || '').trim();
+      if (text.length > 100) return text;
+    }
+
+    // 2. Check markdown / prose containers
+    const markdowns = Array.from(document.querySelectorAll('.markdown, [class*="markdown"], .prose'));
+    if (markdowns.length) {
+      const text = (markdowns[markdowns.length - 1].innerText || markdowns[markdowns.length - 1].textContent || '').trim();
+      if (text.length > 100) return text;
+    }
+
+    // 3. Check data-message-author-role="assistant"
+    const nodes = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
+    if (nodes.length) {
+      const text = (nodes[nodes.length - 1].innerText || nodes[nodes.length - 1].textContent || '').trim();
+      if (text.length > 0) return text;
+    }
+
+    // 4. Fallback to agent-turn
+    const agentTurns = Array.from(document.querySelectorAll('.agent-turn, [class*="agent-turn"]'));
+    if (agentTurns.length) {
+      return (agentTurns[agentTurns.length - 1].innerText || agentTurns[agentTurns.length - 1].textContent || '').trim();
+    }
+
+    return '';
   });
 }
 

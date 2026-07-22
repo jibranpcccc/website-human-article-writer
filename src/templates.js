@@ -35,13 +35,11 @@ that is fine. You are not writing a guide.
 OUTPUT STRUCTURE
 ════════════════════════════════════════
 
-3 parts. Each part = 1000 words minimum.
-Full article must be 3000 words minimum total.
-Write Part 1 only first. The system will send "Next Part." to get Part 2, then Part 3.
-Do NOT write "Stop", "Next Part", "Part 2 follows", or any continuation markers in your output.
-No conclusion at end of Part 1.
-No conclusion at end of Part 2.
-No announcement of what comes next.
+Write the COMPLETE ~3000 word article in ONE single response.
+Target length: strictly between 2,800 and 3,100 words total (NEAREST TO 3000 WORDS MAX).
+Write continuously without stopping.
+Do NOT write "Part 1", "Part 2", "Next Part", or any continuation markers.
+No summary or philosophical bow-tie ending at the end.
 
 ════════════════════════════════════════
 PRE-WRITING CONSTRAINTS (REQUIRED)
