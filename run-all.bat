@@ -1,5 +1,4 @@
 @echo off
-setlocal enabledelayedexpansion
 cd /d "%~dp0"
 title BigPickle Article Writer Launcher
 
@@ -35,15 +34,16 @@ if not exist "%~dp0node_modules\vite" (
 )
 
 :: 3) Locate Chrome
-set CHROME="C:\Program Files\Google\Chrome\Application\chrome.exe"
-if not exist %CHROME% (
-  set CHROME="%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
-)
-if not exist %CHROME% (
-  set CHROME="C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+set CHROME_PATH=
+if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
+  set CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"
+) else if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" (
+  set CHROME_PATH="%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
+) else if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" (
+  set CHROME_PATH="C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 )
 
-if not exist %CHROME% (
+if "%CHROME_PATH%"=="" (
   echo ERROR: Google Chrome was not found on this computer.
   echo Please install Google Chrome from https://www.google.com/chrome/ and try again.
   pause
@@ -55,7 +55,6 @@ set BRIDGE_PORT=19322
 set VITE_PORT=19323
 set SESSION_DIR=%~dp0server\sessions\chrome-cdp-19321
 
-:choose_mode
 cls
 echo ============================================================
 echo  BigPickle ChatGPT Article Writer Launcher
@@ -73,11 +72,11 @@ set /p MODE_CHOICE="Select mode [1 or 2]: "
 
 if "%MODE_CHOICE%"=="2" (
   set CHROME_MODE=headless
-  set CHROME_FLAGS=--headless=new --remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check --disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching
+  set CHROME_FLAGS=--headless=new --remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check --disable-features="OptimizationGuideModelDownloading,OptimizationHintsFetching"
   echo [Mode] HEADLESS selected.
 ) else (
   set CHROME_MODE=visible
-  set CHROME_FLAGS=--remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check --disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching
+  set CHROME_FLAGS=--remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check --disable-features="OptimizationGuideModelDownloading,OptimizationHintsFetching"
   echo [Mode] VISIBLE selected.
 )
 
@@ -86,7 +85,7 @@ if not exist "%SESSION_DIR%" mkdir "%SESSION_DIR%"
 :: 4) Launch Chrome
 echo.
 echo [1/3] Launching Chrome on port %CDP_PORT%...
-start "" %CHROME% %CHROME_FLAGS% "https://chatgpt.com"
+start "" %CHROME_PATH% %CHROME_FLAGS% "https://chatgpt.com"
 
 :: 5) Open Browser UI after 6 seconds
 start /b cmd /c "timeout /t 6 /nobreak >nul && start http://127.0.0.1:%VITE_PORT%/"
