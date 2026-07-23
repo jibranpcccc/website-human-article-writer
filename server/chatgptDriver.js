@@ -98,25 +98,36 @@ async function detectActiveModel(page) {
  * Try to enable temporary chat mode.
  */
 async function enableTemporaryChat(page) {
-  const url = page.url();
-  if (!url.includes('temporary-chat=true')) {
-    const newUrl = new URL(url);
-    newUrl.searchParams.set('temporary-chat', 'true');
-    await page.goto(newUrl.toString(), { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(500);
-  }
-
   try {
-    await page.evaluate(() => {
-      const labels = Array.from(document.querySelectorAll('div, span, button, a'));
-      const temp = labels.find(el => /temporary chat/i.test(el.innerText || el.textContent || ''));
-      if (temp) {
-        let clickable = temp.closest('button, a, [role="switch"]') || temp;
-        clickable.click();
-      }
+    const url = page.url();
+    if (!url.includes('temporary-chat=true')) {
+      const newUrl = new URL(url);
+      newUrl.searchParams.set('temporary-chat', 'true');
+      await page.goto(newUrl.toString(), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(500);
+    }
+
+    const isTempOn = await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll('button, a')).find(b => {
+        const label = (b.getAttribute('aria-label') || '').toLowerCase();
+        return label.includes('turn on temporary chat') || label.includes('turn off temporary chat');
+      });
+      if (!btn) return true;
+      return btn.getAttribute('aria-label').toLowerCase().includes('turn off temporary chat');
     });
+
+    if (!isTempOn) {
+      console.log('[driver] clicking button to enable temporary chat mode...');
+      const turnOnBtn = page.locator('button[aria-label*="Turn on temporary chat" i]').first();
+      if (await turnOnBtn.count() > 0) {
+        await turnOnBtn.click();
+        await page.waitForTimeout(400);
+      }
+    } else {
+      console.log('[driver] temporary chat mode is active.');
+    }
   } catch (e) {
-    // ignore toggle errors; URL param is the main mechanism
+    console.log('[driver] temporary chat check notice:', e.message);
   }
 }
 
@@ -203,23 +214,24 @@ export async function selectMediumIntelligence(page) {
     console.log('[driver] checking intelligence selector...');
 
     const pill = page.locator('button, [class*="composer-pill"]').filter({
-      hasText: /^(High|Instant|Low|Standard|Auto)$/i
+      hasText: /^(High|Instant|Low|Standard|Auto|Medium)$/i
     });
 
     const count = await pill.count();
     if (count === 0) {
-      const isMedium = await page.locator('button, [class*="composer-pill"]').filter({ hasText: /^Medium$/i }).count();
-      if (isMedium > 0) {
-        console.log('[driver] intelligence is already set to Medium.');
-      } else {
-        console.log('[driver] intelligence selector button not found.');
-      }
+      console.log('[driver] intelligence selector button not found.');
       return;
     }
 
     const currentVal = (await pill.first().innerText().catch(() => '')).trim();
-    console.log('[driver] found intelligence selector button, current value:', currentVal);
+    console.log('[driver] current intelligence pill value:', currentVal);
 
+    if (currentVal.toLowerCase() === 'medium') {
+      console.log('[driver] intelligence is already set to Medium.');
+      return;
+    }
+
+    console.log(`[driver] switching intelligence from "${currentVal}" to Medium...`);
     await pill.first().click();
     await page.waitForTimeout(600);
 
@@ -229,7 +241,7 @@ export async function selectMediumIntelligence(page) {
 
     if (await mediumItem.count() > 0) {
       await mediumItem.click({ force: true });
-      console.log('[driver] successfully switched intelligence selector to Medium.');
+      console.log('[driver] successfully set intelligence selector to Medium.');
       await page.waitForTimeout(500);
     } else {
       console.log('[driver] warning: "Medium" option not found in intelligence menu.');
