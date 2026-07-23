@@ -34,16 +34,16 @@ if not exist "%~dp0node_modules\vite" (
 )
 
 :: 3) Locate Chrome
-set CHROME_PATH=
+set "CHROME_PATH="
 if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
-  set CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"
+  set "CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe"
 ) else if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" (
-  set CHROME_PATH="%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
+  set "CHROME_PATH=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
 ) else if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" (
-  set CHROME_PATH="C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+  set "CHROME_PATH=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 )
 
-if "%CHROME_PATH%"=="" (
+if not defined CHROME_PATH (
   echo ERROR: Google Chrome was not found on this computer.
   echo Please install Google Chrome from https://www.google.com/chrome/ and try again.
   pause
@@ -97,7 +97,7 @@ del /f /q "%SESSION_DIR%\SingletonSocket" 2>nul
 :: 4) Launch Chrome
 echo.
 echo [1/3] Launching Chrome on port %CDP_PORT%...
-start "" %CHROME_PATH% %CHROME_FLAGS% "https://chatgpt.com"
+start "" "%CHROME_PATH%" %CHROME_FLAGS% "https://chatgpt.com"
 
 :: 5) Get LAN IP for sharing
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4" ^| findstr /v "169.254"') do (
