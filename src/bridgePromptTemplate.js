@@ -33,11 +33,12 @@ that is fine. You are not writing a guide.
 OUTPUT STRUCTURE
 ════════════════════════════════════════
 
-Write the COMPLETE ~3000 word article in ONE single response.
-Target length: strictly between 2,800 and 3,100 words total (NEAREST TO 3000 WORDS MAX).
-Write continuously without stopping.
+Write Part 1 of the article ONLY in this response.
+Target length for Part 1: strictly between 900 and 1050 words.
+Stop after Part 1. Do NOT write Part 2 or Part 3 yet.
+Write continuously without stopping mid-section.
 Do NOT write "Part 1", "Part 2", "Next Part", or any continuation markers.
-No summary or philosophical bow-tie ending at the end.
+No summary or philosophical bow-tie ending at the end of Part 1.
 
 ════════════════════════════════════════
 PRE-WRITING CONSTRAINTS (REQUIRED)
@@ -593,10 +594,10 @@ Article Title Here (H1)
 
 First H2 Heading Here
 
-[Body text — strictly between 2,800 and 3,100 words total (NEAREST TO 3000 WORDS MAX)]
+[Body text for Part 1 — strictly between 900 and 1050 words. Stop here. Do not continue into Part 2.]
 
 ════════════════════════════════════════
-START — WRITE FULL ARTICLE NOW (2,800 to 3,100 words)
+START — WRITE PART 1 NOW (900 to 1050 words, then STOP)
 ════════════════════════════════════════
 
 Topic/Keyword: [INSERT KEYWORD HERE]`;

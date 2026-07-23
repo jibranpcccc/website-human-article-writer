@@ -49,9 +49,9 @@ async function runJob(jobId) {
       throw new Error('ChatGPT login page detected. Please log in via the browser and retry.');
     }
 
-    const isMultiTurn = job.mode === 'multiTurn';
+    const isMultiTurn = job.mode !== 'quickTest'; // use 3-part for all article modes
     const driver = isMultiTurn ? sendThreePartPrompt : sendPrompt;
-    console.log('[bridge] using driver:', isMultiTurn ? '3-part multi-turn' : 'single-turn 3000w fast', 'mode:', job.mode);
+    console.log('[bridge] using driver:', isMultiTurn ? '3-part multi-turn ~3000w' : 'single-turn quick', 'mode:', job.mode);
 
     const { content, model } = await driver(page, { prompt: job.prompt });
     job.status = 'complete';
