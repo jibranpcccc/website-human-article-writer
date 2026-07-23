@@ -7,43 +7,67 @@ color 0A
 cls
 echo.
 echo  ============================================================
-echo   BigPickle AI Article Writer - Starting...
+echo   BigPickle AI Article Writer - Starting Up...
 echo  ============================================================
 echo.
 
-:: ── Step 1: Check Node.js ────────────────────────────────────
+:: ── STEP 1: Kill ANYTHING already using our ports ────────────
+echo  [1/6] Clearing ports 19321, 19322, 19323...
+
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19321 " 2^>nul') do (
+  taskkill /F /PID %%a >nul 2>nul
+)
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19322 " 2^>nul') do (
+  taskkill /F /PID %%a >nul 2>nul
+)
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19323 " 2^>nul') do (
+  taskkill /F /PID %%a >nul 2>nul
+)
+
+:: Kill any leftover node processes from previous runs
+taskkill /F /IM node.exe >nul 2>nul
+
+timeout /t 2 /nobreak >nul
+echo  [OK] Ports cleared.
+
+:: ── STEP 2: Check Node.js ────────────────────────────────────
+echo  [2/6] Checking Node.js...
 where node >nul 2>nul
 if %errorlevel% neq 0 (
   color 0C
-  echo  [ERROR] Node.js is not installed!
   echo.
-  echo  Please install it from: https://nodejs.org/
-  echo  Download the LTS version, install it, then run this file again.
+  echo  ============================================================
+  echo   ERROR: Node.js is NOT installed!
+  echo.
+  echo   Please:
+  echo   1. Go to https://nodejs.org/
+  echo   2. Download the LTS version
+  echo   3. Install it
+  echo   4. Run this file again
+  echo  ============================================================
   echo.
   pause
   exit /b 1
 )
 echo  [OK] Node.js found.
 
-:: ── Step 2: Install dependencies if needed ───────────────────
+:: ── STEP 3: Install npm packages if missing ──────────────────
+echo  [3/6] Checking packages...
 if not exist "%~dp0node_modules\vite" (
-  echo.
-  echo  [SETUP] Installing packages for first time... (takes 1-2 minutes)
-  echo  Please wait, do not close this window.
-  echo.
-  call npm install --silent
+  echo  [..] First time setup - installing packages (1-3 min)...
+  call npm install
   if %errorlevel% neq 0 (
     color 0C
     echo.
-    echo  [ERROR] Package install failed. Check your internet connection.
+    echo  ERROR: npm install failed. Check internet connection.
     pause
     exit /b 1
   )
-  echo  [OK] Packages installed.
 )
 echo  [OK] Packages ready.
 
-:: ── Step 3: Locate Chrome ────────────────────────────────────
+:: ── STEP 4: Locate Chrome ────────────────────────────────────
+echo  [4/6] Locating Chrome...
 set CHROME_PATH=
 if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
   set CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe
@@ -56,31 +80,58 @@ if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
 if "%CHROME_PATH%"=="" (
   color 0C
   echo.
-  echo  [ERROR] Google Chrome not found!
-  echo  Please install Chrome from: https://www.google.com/chrome/
+  echo  ERROR: Chrome not found. Install from https://www.google.com/chrome/
   pause
   exit /b 1
 )
 echo  [OK] Chrome found.
 
-:: ── Step 4: Ports and paths ──────────────────────────────────
-set CDP_PORT=19321
-set BRIDGE_PORT=19322
-set VITE_PORT=19323
+:: ── STEP 5: Launch Chrome ────────────────────────────────────
+echo  [5/6] Launching Chrome...
 set SESSION_DIR=%~dp0server\sessions\chrome-cdp-19321
-
 if not exist "%SESSION_DIR%" mkdir "%SESSION_DIR%"
 del /f /q "%SESSION_DIR%\SingletonLock" 2>nul
 del /f /q "%SESSION_DIR%\SingletonSocket" 2>nul
+start "" "%CHROME_PATH%" --remote-debugging-port=19321 --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check "https://chatgpt.com"
+echo  [OK] Chrome launched.
 
-:: ── Step 5: Allow through Windows Firewall automatically ─────
-echo  [OK] Configuring firewall (may ask for admin)...
-netsh advfirewall firewall delete rule name="BigPickle-Vite" >nul 2>nul
-netsh advfirewall firewall add rule name="BigPickle-Vite" dir=in action=allow protocol=TCP localport=%VITE_PORT% >nul 2>nul
-netsh advfirewall firewall delete rule name="BigPickle-Bridge" >nul 2>nul
-netsh advfirewall firewall add rule name="BigPickle-Bridge" dir=in action=allow protocol=TCP localport=%BRIDGE_PORT% >nul 2>nul
+:: ── STEP 6: Start servers ────────────────────────────────────
+echo  [6/6] Starting servers...
+del /f /q "%~dp0server_log.txt" 2>nul
+start "BP-Servers" /MIN cmd /c "node server/startAll.js > "%~dp0server_log.txt" 2>&1"
 
-:: ── Step 6: Get LAN IP ───────────────────────────────────────
+:: Wait for port 19323 to actually start accepting connections
+echo  [..] Waiting for app server to be ready (up to 30 seconds)...
+set /a TRIES=0
+:wait_loop
+set /a TRIES+=1
+timeout /t 1 /nobreak >nul
+netstat -ano | findstr ":19323 " >nul 2>nul
+if %errorlevel%==0 goto :server_ready
+if !TRIES! LSS 30 goto :wait_loop
+
+:: If we get here, server didn't start - show the log
+color 0C
+cls
+echo.
+echo  ============================================================
+echo   ERROR: Server failed to start after 30 seconds!
+echo  ============================================================
+echo.
+echo  Server log output:
+echo  ------------------------------------------
+type "%~dp0server_log.txt" 2>nul
+echo  ------------------------------------------
+echo.
+echo  Common fixes:
+echo  - Close any other apps using ports 19322 or 19323
+echo  - Re-run this file as Administrator (right-click START.bat)
+echo.
+pause
+exit /b 1
+
+:server_ready
+:: ── Get LAN IP ───────────────────────────────────────────────
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4" ^| findstr /v "169.254"') do (
   set LAN_IP=%%a
   goto :got_ip
@@ -88,37 +139,10 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4" ^| findstr /v 
 :got_ip
 set LAN_IP=%LAN_IP: =%
 
-:: ── Step 7: Launch Chrome ────────────────────────────────────
-echo  [OK] Launching Chrome with ChatGPT...
-start "" "%CHROME_PATH%" --remote-debugging-port=%CDP_PORT% --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check "https://chatgpt.com"
+:: Open browser
+timeout /t 1 /nobreak >nul
+start http://127.0.0.1:19323/
 
-:: ── Step 8: Start bridge + Vite in background ────────────────
-echo  [OK] Starting servers...
-start "BigPickle-Servers" /MIN cmd /c "node server/startAll.js > server_log.txt 2>&1"
-
-:: ── Step 9: Wait until Vite is actually ready ────────────────
-echo  [..] Waiting for app to be ready...
-set READY=0
-for /L %%i in (1,1,30) do (
-  if !READY!==0 (
-    timeout /t 1 /nobreak >nul
-    curl -s http://127.0.0.1:%VITE_PORT% >nul 2>nul
-    if !errorlevel!==0 (
-      set READY=1
-    )
-  )
-)
-
-if !READY!==0 (
-  :: Curl not available, just wait 10 seconds
-  timeout /t 8 /nobreak >nul
-)
-
-:: ── Step 10: Open browser ────────────────────────────────────
-echo  [OK] Opening app in your browser...
-start http://127.0.0.1:%VITE_PORT%/
-
-:: ── Step 11: Show info ───────────────────────────────────────
 cls
 color 0A
 echo.
@@ -126,22 +150,24 @@ echo  ============================================================
 echo   BigPickle AI Article Writer - RUNNING!
 echo  ============================================================
 echo.
-echo   Your URL:         http://127.0.0.1:%VITE_PORT%/
-echo   Team (WiFi):      http://%LAN_IP%:%VITE_PORT%/
+echo   Your URL:     http://127.0.0.1:19323/
+echo   Team WiFi:    http://%LAN_IP%:19323/
 echo.
 echo  ============================================================
-echo   IMPORTANT:
-echo   1. In the Chrome window that opened, LOG IN to ChatGPT
-echo      if you are not already logged in.
-echo   2. KEEP THIS WINDOW OPEN while using the app.
-echo   3. To stop, close this window.
+echo.
+echo   IMPORTANT: Log into ChatGPT in the Chrome window!
+echo   IMPORTANT: Keep this window OPEN while using the app.
+echo.
 echo  ============================================================
 echo.
-echo  Press any key to STOP the servers and exit.
-echo.
+echo  Press any key to STOP everything and exit...
 pause >nul
 
-:: ── Cleanup ──────────────────────────────────────────────────
-taskkill /f /fi "WINDOWTITLE eq BigPickle-Servers*" >nul 2>nul
-echo  Servers stopped. Goodbye!
+:: Cleanup
+echo.
+echo  Stopping all servers...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19322 " 2^>nul') do taskkill /F /PID %%a >nul 2>nul
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19323 " 2^>nul') do taskkill /F /PID %%a >nul 2>nul
+taskkill /F /IM node.exe >nul 2>nul
+echo  Done. Goodbye!
 timeout /t 2 /nobreak >nul
