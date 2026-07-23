@@ -283,9 +283,11 @@ export async function generateContent({
 
   const blogImagePromptsPromise = (async () => {
     if (!canGenerateImagePrompts) {
-      console.log('[api] Skipping blog image prompts — no API key available in BigPickle mode. Add VITE_MISTRAL_KEYS to .env to enable image prompts.');
+      console.log('[api] Skipping blog image prompts — no Mistral keys found in .env');
+      if (onProgress) onProgress('⚠️ No Mistral keys found — image prompts skipped. Add VITE_MISTRAL_KEYS to .env', 80);
       return '';
     }
+    console.log('[api] Starting blog image prompts with', MISTRAL_KEYS.length, 'Mistral keys. First key starts:', MISTRAL_KEYS[0]?.slice(0,6));
     const blogSysInstruction = 'You are an expert blog content image planner and AI image prompt engineer. Follow the Master Image Prompt System v6.0 exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
     
     const buildBlogPartRequest = (imageRange, count) => templates.imagePromptSystem
@@ -333,9 +335,10 @@ export async function generateContent({
 
   const pinterestImagePromptsPromise = (async () => {
     if (!canGenerateImagePrompts) {
-      console.log('[api] Skipping pinterest image prompts — no API key available in BigPickle mode.');
+      console.log('[api] Skipping pinterest image prompts — no Mistral keys found in .env');
       return '';
     }
+    console.log('[api] Starting Pinterest image prompts with', MISTRAL_KEYS.length, 'Mistral keys.');
     const pinterestSysInstruction = 'You are an expert Pinterest image planner and AI image prompt engineer. Generate extremely high-quality, rich, detailed candid portrait image prompts of 75-110 words focusing on the hairstyle. ABSOLUTELY NO SELFIES or references to holding phones/mirror shots. Streamline the output: ONLY output one-line prompts in the requested format. Never include blueprints, content profiles, intro, or outro.';
 
     const hairstyleTopics = await callAPI({
@@ -811,8 +814,16 @@ Keyword: ${keyword}`;
   // Wait for background image generations to complete
   onProgress('Awaiting parallel image prompts completion...', 85);
   const [blogImagePrompts, pinterestImagePrompts] = await Promise.all([
-    blogImagePromptsPromise.catch(err => { console.warn('[api] Blog image prompts failed (non-fatal):', err.message); return ''; }),
-    pinterestImagePromptsPromise.catch(err => { console.warn('[api] Pinterest image prompts failed (non-fatal):', err.message); return ''; })
+    blogImagePromptsPromise.catch(err => {
+      console.warn('[api] Blog image prompts failed:', err.message);
+      if (onProgress) onProgress(`⚠️ Blog image prompts error: ${err.message}`, 87);
+      return '';
+    }),
+    pinterestImagePromptsPromise.catch(err => {
+      console.warn('[api] Pinterest image prompts failed:', err.message);
+      if (onProgress) onProgress(`⚠️ Pinterest image prompts error: ${err.message}`, 89);
+      return '';
+    })
   ]);
 
   const result = {
