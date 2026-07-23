@@ -278,7 +278,14 @@ export async function generateContent({
 
   // ── CONCURRENT BACKGROUND IMAGE PROMPT GENERATION ──
   // Start image prompt generation concurrently right as article generation starts!
+  // Skip entirely if we have no usable API key (BigPickle mode with no Mistral or direct key)
+  const canGenerateImagePrompts = hasMistralKeys || (!!apiKey && apiKey.trim().length > 10);
+
   const blogImagePromptsPromise = (async () => {
+    if (!canGenerateImagePrompts) {
+      console.log('[api] Skipping blog image prompts — no API key available in BigPickle mode. Add VITE_MISTRAL_KEYS to .env to enable image prompts.');
+      return '';
+    }
     const blogSysInstruction = 'You are an expert blog content image planner and AI image prompt engineer. Follow the Master Image Prompt System v6.0 exactly. Write the FULL Hairstyle Blueprint for every image. Write the FULL negative prompt for every image — never use shortcuts or (Same as above).';
     
     const buildBlogPartRequest = (imageRange, count) => templates.imagePromptSystem
@@ -325,6 +332,10 @@ export async function generateContent({
   })();
 
   const pinterestImagePromptsPromise = (async () => {
+    if (!canGenerateImagePrompts) {
+      console.log('[api] Skipping pinterest image prompts — no API key available in BigPickle mode.');
+      return '';
+    }
     const pinterestSysInstruction = 'You are an expert Pinterest image planner and AI image prompt engineer. Generate extremely high-quality, rich, detailed candid portrait image prompts of 75-110 words focusing on the hairstyle. ABSOLUTELY NO SELFIES or references to holding phones/mirror shots. Streamline the output: ONLY output one-line prompts in the requested format. Never include blueprints, content profiles, intro, or outro.';
 
     const hairstyleTopics = await callAPI({

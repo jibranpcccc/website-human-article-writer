@@ -612,6 +612,17 @@ async function handleGenerate() {
       console.error(err);
       logProgress(`Failed to generate "${currentKeyword}": ${err.message}`, 'error');
       updateQueueItemVisual(i, 'failed', 'Failed ✗');
+
+      // If only one keyword and it fails, immediately restore button + hide progress panel
+      if (keywords.length === 1) {
+        STATE.isBatchRunning = false;
+        DOM.generateBtn.disabled = false;
+        DOM.generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Full Output';
+        DOM.progressPanel.style.display = 'none';
+        DOM.cancelBatchBtn.style.display = 'none';
+        alert(`Generation failed: ${err.message}`);
+        return;
+      }
       // Continue loop for other keywords in the batch queue even if one fails
     }
   }
