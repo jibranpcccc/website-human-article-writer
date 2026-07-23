@@ -45,7 +45,14 @@ export async function getPage() {
 
   if (!page.url().includes('chatgpt.com')) {
     await page.goto(CHATGPT_URL, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    // Wait for Cloudflare challenge to pass — it can take up to 8s
+    await page.waitForTimeout(8000);
+    // If still on Cloudflare, wait for the page title to change
+    const titleAfter = await page.title().catch(() => '');
+    if (titleAfter.toLowerCase().includes('just a moment')) {
+      console.log('[driver] Cloudflare challenge detected, waiting up to 15s more...');
+      await page.waitForTimeout(15000);
+    }
   }
   return page;
 }
@@ -55,11 +62,19 @@ export function isLoginPage(page) {
   return url.includes('/auth/login') || url.includes('/auth/');
 }
 
-async function waitForPromptArea(page, timeout = 15000) {
+async function waitForPromptArea(page, timeout = 30000) {
+  // First check: if Cloudflare challenge page, wait for it to pass
+  const currentTitle = await page.title().catch(() => '');
+  if (currentTitle.toLowerCase().includes('just a moment')) {
+    console.log('[driver] Cloudflare page detected in waitForPromptArea, waiting 15s...');
+    await page.waitForTimeout(15000);
+  }
+
   const selectors = [
     '#prompt-textarea',
     '[data-testid="prompt-textarea"]',
-    'div[contenteditable="true"]'
+    'div[contenteditable="true"]',
+    'div[role="textbox"]'
   ];
   for (const selector of selectors) {
     try {
@@ -67,7 +82,13 @@ async function waitForPromptArea(page, timeout = 15000) {
       if (el) return el;
     } catch {}
   }
-  throw new Error('ChatGPT prompt textarea not found. Are you logged in?');
+
+  // Final check: is this a login page?
+  const url = page.url();
+  if (url.includes('/auth') || url.includes('login')) {
+    throw new Error('ChatGPT is showing the login page. Please open the Chrome window that launched with run-all.bat and log in to ChatGPT.');
+  }
+  throw new Error('ChatGPT prompt textarea not found. Please make sure you are logged into ChatGPT in the Chrome window opened by run-all.bat.');
 }
 
 /**
