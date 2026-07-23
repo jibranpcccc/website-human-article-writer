@@ -1,147 +1,127 @@
 @echo off
 setlocal enabledelayedexpansion
-cd /d "%~dp0"
 title BigPickle Article Writer
 color 0A
 
 cls
 echo.
 echo  ============================================================
-echo   BigPickle AI Article Writer - Starting Up...
+echo   BigPickle AI Article Writer - Starting...
 echo  ============================================================
 echo.
 
-:: ── STEP 1: Kill ANYTHING already using our ports ────────────
-echo  [1/6] Clearing ports 19321, 19322, 19323...
+:: Set working directory to where this bat file is
+cd /d "%~dp0"
 
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19321 " 2^>nul') do (
-  taskkill /F /PID %%a >nul 2>nul
-)
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19322 " 2^>nul') do (
-  taskkill /F /PID %%a >nul 2>nul
-)
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19323 " 2^>nul') do (
-  taskkill /F /PID %%a >nul 2>nul
-)
-
-:: Kill any leftover node processes from previous runs
+:: ─── STEP 1: Kill anything on our ports ──────────────────────
+echo  [1/7] Clearing ports...
+for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr ":19321 "') do taskkill /F /PID %%a >nul 2>nul
+for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr ":19322 "') do taskkill /F /PID %%a >nul 2>nul
+for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr ":19323 "') do taskkill /F /PID %%a >nul 2>nul
 taskkill /F /IM node.exe >nul 2>nul
-
 timeout /t 2 /nobreak >nul
 echo  [OK] Ports cleared.
 
-:: ── STEP 2: Check Node.js ────────────────────────────────────
-echo  [2/6] Checking Node.js...
-where node >nul 2>nul
-if %errorlevel% neq 0 (
-  color 0C
-  echo.
-  echo  ============================================================
-  echo   ERROR: Node.js is NOT installed!
-  echo.
-  echo   Please:
-  echo   1. Go to https://nodejs.org/
-  echo   2. Download the LTS version
-  echo   3. Install it
-  echo   4. Run this file again
-  echo  ============================================================
-  echo.
-  pause
-  exit /b 1
-)
+:: ─── STEP 2: Check Node.js ───────────────────────────────────
+echo  [2/7] Checking Node.js...
+node --version >nul 2>nul
+if errorlevel 1 goto :no_node
 echo  [OK] Node.js found.
+goto :check_npm_packages
 
-:: ── STEP 3: Install npm packages if missing ──────────────────
-echo  [3/6] Checking packages...
-if not exist "%~dp0node_modules\vite" (
-  echo  [..] First time setup - installing packages (1-3 min)...
-  call npm install
-  if %errorlevel% neq 0 (
-    color 0C
-    echo.
-    echo  ERROR: npm install failed. Check internet connection.
-    pause
-    exit /b 1
-  )
-)
-echo  [OK] Packages ready.
-
-:: ── STEP 4: Locate Chrome ────────────────────────────────────
-echo  [4/6] Locating Chrome...
-set "CHROME_PATH="
-if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
-  set "CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe"
-) else if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" (
-  set "CHROME_PATH=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
-) else if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" (
-  set "CHROME_PATH=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
-)
-
-if not defined CHROME_PATH (
-  color 0C
-  echo.
-  echo  ERROR: Chrome not found. Install from https://www.google.com/chrome/
-  pause
-  exit /b 1
-)
-echo  [OK] Chrome found.
-
-:: ── STEP 5: Launch Chrome ────────────────────────────────────
-echo  [5/6] Launching Chrome...
-set SESSION_DIR=%~dp0server\sessions\chrome-cdp-19321
-if not exist "%SESSION_DIR%" mkdir "%SESSION_DIR%"
-del /f /q "%SESSION_DIR%\SingletonLock" 2>nul
-del /f /q "%SESSION_DIR%\SingletonSocket" 2>nul
-start "" "%CHROME_PATH%" --remote-debugging-port=19321 --user-data-dir="%SESSION_DIR%" --no-first-run --no-default-browser-check "https://chatgpt.com"
-echo  [OK] Chrome launched.
-
-:: ── STEP 6: Start servers ────────────────────────────────────
-echo  [6/6] Starting servers...
-set "LOG_FILE=%~dp0server_log.txt"
-start "BP-Servers" /MIN cmd /c "node server/startAll.js > "%LOG_FILE%" 2>&1"
-
-:: Wait for port 19323 to actually start accepting connections
-echo  [..] Waiting for app server to be ready (up to 30 seconds)...
-set /a TRIES=0
-:wait_loop
-set /a TRIES+=1
-timeout /t 1 /nobreak >nul
-netstat -ano | findstr ":19323 " >nul 2>nul
-if %errorlevel%==0 goto :server_ready
-if !TRIES! LSS 30 goto :wait_loop
-
-:: If we get here, server didn't start - show the log
+:no_node
 color 0C
-cls
 echo.
-echo  ============================================================
-echo   ERROR: Server failed to start after 30 seconds!
-echo  ============================================================
-echo.
-echo  Server log output:
-echo  ------------------------------------------
-type "%~dp0server_log.txt" 2>nul
-echo  ------------------------------------------
-echo.
-echo  Common fixes:
-echo  - Close any other apps using ports 19322 or 19323
-echo  - Re-run this file as Administrator (right-click START.bat)
+echo  ERROR: Node.js not found!
+echo  Download from: https://nodejs.org/ then run this again.
 echo.
 pause
 exit /b 1
 
-:server_ready
-:: ── Get LAN IP ───────────────────────────────────────────────
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4" ^| findstr /v "169.254"') do (
-  set LAN_IP=%%a
-  goto :got_ip
-)
-:got_ip
-set LAN_IP=%LAN_IP: =%
+:: ─── STEP 3: Install packages ────────────────────────────────
+:check_npm_packages
+echo  [3/7] Checking packages...
+if exist "node_modules\vite\package.json" goto :packages_ok
+echo  [..] Installing packages (first time - 1-3 min)...
+call npm install
+if errorlevel 1 goto :npm_fail
+:packages_ok
+echo  [OK] Packages ready.
+goto :find_chrome
 
-:: Open browser
+:npm_fail
+color 0C
+echo.
+echo  ERROR: npm install failed. Check internet connection.
+echo.
+pause
+exit /b 1
+
+:: ─── STEP 4: Find Chrome ─────────────────────────────────────
+:find_chrome
+echo  [4/7] Finding Chrome...
+set "CHROME="
+if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" set "CHROME=C:\Program Files\Google\Chrome\Application\chrome.exe"
+if not defined CHROME if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" set "CHROME=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
+if not defined CHROME if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" set "CHROME=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+if not defined CHROME goto :no_chrome
+echo  [OK] Chrome found.
+goto :start_chrome
+
+:no_chrome
+color 0C
+echo.
+echo  ERROR: Chrome not found!
+echo  Install from: https://www.google.com/chrome/
+echo.
+pause
+exit /b 1
+
+:: ─── STEP 5: Launch Chrome ───────────────────────────────────
+:start_chrome
+echo  [5/7] Launching Chrome...
+set "SESS=server\sessions\chrome-cdp-19321"
+if not exist "%SESS%" mkdir "%SESS%"
+del /f /q "%SESS%\SingletonLock" 2>nul
+del /f /q "%SESS%\SingletonSocket" 2>nul
+start "" "%CHROME%" --remote-debugging-port=19321 "--user-data-dir=%SESS%" --no-first-run --no-default-browser-check "https://chatgpt.com"
+echo  [OK] Chrome launched - LOG IN to ChatGPT if asked!
+
+:: ─── STEP 6: Start servers ───────────────────────────────────
+echo  [6/7] Starting servers...
+start "BP-Servers" /MIN node server/startAll.js
+
+:: ─── STEP 7: Wait for server to be ready ─────────────────────
+echo  [7/7] Waiting for app to be ready...
+set READY=0
+for /L %%i in (1,1,30) do (
+  if !READY!==0 (
+    timeout /t 1 /nobreak >nul
+    netstat -ano 2>nul | findstr ":19323 " >nul
+    if not errorlevel 1 set READY=1
+  )
+)
+
+if !READY!==0 (
+  color 0C
+  echo.
+  echo  ERROR: Server did not start in 30 seconds.
+  echo  Try: Right-click START.bat and Run as Administrator
+  echo.
+  pause
+  exit /b 1
+)
+
+:: ─── Open browser & show info ────────────────────────────────
 timeout /t 1 /nobreak >nul
 start http://127.0.0.1:19323/
+
+for /f "tokens=2 delims=:" %%a in ('ipconfig 2^>nul ^| findstr /i "IPv4" ^| findstr /v "169.254"') do (
+  set "LAN=%%a"
+  goto :show_info
+)
+:show_info
+set "LAN=%LAN: =%"
 
 cls
 color 0A
@@ -150,24 +130,21 @@ echo  ============================================================
 echo   BigPickle AI Article Writer - RUNNING!
 echo  ============================================================
 echo.
-echo   Your URL:     http://127.0.0.1:19323/
-echo   Team WiFi:    http://%LAN_IP%:19323/
+echo   Your URL (this PC):   http://127.0.0.1:19323/
+echo   Team URL (WiFi):      http://%LAN%:19323/
+echo.
+echo   - Log into ChatGPT in the Chrome window that opened
+echo   - Keep THIS window open while using the app
+echo   - Press any key here to STOP and exit
 echo.
 echo  ============================================================
 echo.
-echo   IMPORTANT: Log into ChatGPT in the Chrome window!
-echo   IMPORTANT: Keep this window OPEN while using the app.
-echo.
-echo  ============================================================
-echo.
-echo  Press any key to STOP everything and exit...
 pause >nul
 
-:: Cleanup
-echo.
-echo  Stopping all servers...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19322 " 2^>nul') do taskkill /F /PID %%a >nul 2>nul
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":19323 " 2^>nul') do taskkill /F /PID %%a >nul 2>nul
+:: ─── Cleanup ─────────────────────────────────────────────────
+taskkill /F /FI "WINDOWTITLE eq BP-Servers*" >nul 2>nul
+for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr ":19322 "') do taskkill /F /PID %%a >nul 2>nul
+for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr ":19323 "') do taskkill /F /PID %%a >nul 2>nul
 taskkill /F /IM node.exe >nul 2>nul
-echo  Done. Goodbye!
+echo  Stopped. Goodbye!
 timeout /t 2 /nobreak >nul
