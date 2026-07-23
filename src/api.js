@@ -756,23 +756,26 @@ Keyword: ${keyword}`;
 
   // Stage 2A: For bridge-generated articles (V86/V13), use Mistral for heading formatting
   if (fromBridge && (mode === 'articleV86' || mode === 'articleV13') && hasMistralKeys) {
-    onProgress('Format & SEO: Adding headings and paragraph structure (Mistral)...', 75);
-    const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
-    const mistralKey = getMistralKey(0);
-    let rawFormatted = await callAPI({
-      provider: 'mistral',
-      baseUrl: '/api-mistral/v1/chat/completions',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
-      model: 'mistral-small-latest',
-      systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
-      messages: [{ role: 'user', content: formattingPrompt }],
-      onReasoning: (text) => { if (onReasoning) onReasoning(text, 'Format & SEO'); }
-    });
-
-    if (rawFormatted) {
-      // Strip common AI conversational preambles
-      rawFormatted = rawFormatted.replace(/^(?:Here's|Here is|Below is|Sure|Certainly)[^\n]*\n+/i, '').replace(/^---+\n+/i, '').trim();
-      formattedArticle = rawFormatted;
+    onProgress('Format & SEO: Adding H2/H3 headings (Mistral)...', 75);
+    try {
+      const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
+      const mistralKey = getMistralKey(0);
+      let rawFormatted = await callAPI({
+        provider: 'mistral',
+        baseUrl: '/api-mistral/v1/chat/completions',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
+        model: 'mistral-small-latest',
+        systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
+        messages: [{ role: 'user', content: formattingPrompt }],
+        onReasoning: (text) => { if (onReasoning) onReasoning(text, 'Format & SEO: H2/H3 Headings'); }
+      });
+      if (rawFormatted) {
+        rawFormatted = rawFormatted.replace(/^(?:Here's|Here is|Below is|Sure|Certainly)[^\n]*\n+/i, '').replace(/^---+\n+/i, '').trim();
+        formattedArticle = rawFormatted;
+      }
+    } catch (err) {
+      console.warn('[api] Heading formatter failed (non-fatal), using raw article:', err.message);
+      formattedArticle = finalArticleText;
     }
   }
 
@@ -808,8 +811,8 @@ Keyword: ${keyword}`;
   // Wait for background image generations to complete
   onProgress('Awaiting parallel image prompts completion...', 85);
   const [blogImagePrompts, pinterestImagePrompts] = await Promise.all([
-    blogImagePromptsPromise,
-    pinterestImagePromptsPromise
+    blogImagePromptsPromise.catch(err => { console.warn('[api] Blog image prompts failed (non-fatal):', err.message); return ''; }),
+    pinterestImagePromptsPromise.catch(err => { console.warn('[api] Pinterest image prompts failed (non-fatal):', err.message); return ''; })
   ]);
 
   const result = {
