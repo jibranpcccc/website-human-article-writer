@@ -767,7 +767,7 @@ Keyword: ${keyword}`;
         provider: 'opencode',
         baseUrl: '/api-opencode/zen/v1/chat/completions',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
-        model: 'mistral-large-latest',
+        model: 'mistral-small-latest',
         systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
         messages: [{ role: 'user', content: formattingPrompt }],
         onReasoning: (text) => { if (onReasoning) onReasoning(text, 'Format & SEO: H2/H3 Headings'); }
