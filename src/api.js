@@ -68,7 +68,7 @@ function getMistralKey(index) {
 }
 
 const hasMistralKeys = MISTRAL_KEYS.length > 0;
-const IMAGE_PROMPT_MODEL = 'mimo-v2.5-free'; // Free model guaranteed on OpenCode Zen
+const IMAGE_PROMPT_MODEL = hasMistralKeys ? 'mistral-large-latest' : 'mimo-v2.5-free';
 const IMAGE_PROMPT_MAX_TOKENS = 6000;
 
 function cleanArticleText(text) {
@@ -260,16 +260,16 @@ export async function generateContent({
     headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
-  // Image prompts: always use OpenCode Zen with free Mistral model
-  const imageProvider = 'opencode';
-  let imageBaseUrl = '/api-opencode/zen/v1/chat/completions';
+  // Image prompts: use Mistral API directly when keys available, else OpenCode free model
+  const imageProvider = hasMistralKeys ? 'mistral' : 'opencode';
+  const imageBaseUrl = hasMistralKeys ? '/api-mistral/v1/chat/completions' : '/api-opencode/zen/v1/chat/completions';
 
   function getImageHeaders(keyIndex) {
-    // Free OpenCode models don't strictly need auth, but send a key if we have one
-    const key = apiKey || (hasMistralKeys ? getMistralKey(keyIndex) : '');
-    const h = { 'Content-Type': 'application/json' };
-    if (key) h['Authorization'] = `Bearer ${key}`;
-    return h;
+    const key = hasMistralKeys ? getMistralKey(keyIndex) : apiKey;
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`
+    };
   }
 
   // Image prompts use KEYWORD ONLY — completely independent of article content
@@ -279,7 +279,7 @@ export async function generateContent({
   // ── CONCURRENT BACKGROUND IMAGE PROMPT GENERATION ──
   // Start image prompt generation concurrently right as article generation starts!
   // Skip entirely if we have no usable API key (BigPickle mode with no Mistral or direct key)
-  const canGenerateImagePrompts = true; // Always try — using free OpenCode model, falls back automatically
+  const canGenerateImagePrompts = hasMistralKeys || (!!apiKey && apiKey.trim().length > 10);
 
   const blogImagePromptsPromise = (async () => {
     if (!canGenerateImagePrompts) {
@@ -757,18 +757,16 @@ Keyword: ${keyword}`;
   // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest and articleV15 modes)
   let formattedArticle = finalArticleText;
 
-  // Stage 2A: For bridge-generated articles (V86/V13), use OpenCode Zen + free Mistral for heading formatting
-  const canFormatHeadings = hasMistralKeys || (!!apiKey && apiKey.trim().length > 10);
-  if (fromBridge && (mode === 'articleV86' || mode === 'articleV13') && canFormatHeadings) {
-    onProgress('Format & SEO: Adding H2/H3 headings (Mistral free via OpenCode)...', 75);
+  // Stage 2A: Heading formatter — Mistral small (fast, just adds H2/H3 without changing content)
+  if (fromBridge && (mode === 'articleV86' || mode === 'articleV13') && hasMistralKeys) {
+    onProgress('Format & SEO: Adding H2/H3 headings (Mistral)...', 75);
     try {
       const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
-      const formatterKey = hasMistralKeys ? getMistralKey(0) : apiKey;
       let rawFormatted = await callAPI({
-        provider: 'opencode',
-        baseUrl: '/api-opencode/zen/v1/chat/completions',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${formatterKey}` },
-        model: 'mimo-v2.5-free',
+        provider: 'mistral',
+        baseUrl: '/api-mistral/v1/chat/completions',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getMistralKey(0)}` },
+        model: 'mistral-small-latest',
         systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
         messages: [{ role: 'user', content: formattingPrompt }],
         onReasoning: (text) => { if (onReasoning) onReasoning(text, 'Format & SEO: H2/H3 Headings'); }
