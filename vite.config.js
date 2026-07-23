@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 const bridgePort = process.env.BRIDGE_PORT || process.env.BIGPICKLE_PORT || 19322;
 const bridgeHost = process.env.BRIDGE_HOST || '127.0.0.1';
 const vitePort = parseInt(process.env.VITE_PORT || '19323', 10);
-const viteHost = process.env.VITE_HOST || '127.0.0.1';
+const viteHost = process.env.VITE_HOST || '0.0.0.0';
 
 export default defineConfig({
   server: {

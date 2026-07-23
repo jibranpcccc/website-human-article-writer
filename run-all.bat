@@ -87,7 +87,15 @@ echo.
 echo [1/3] Launching Chrome on port %CDP_PORT%...
 start "" %CHROME_PATH% %CHROME_FLAGS% "https://chatgpt.com"
 
-:: 5) Open Browser UI after 6 seconds
+:: 5) Get LAN IP for sharing
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4" ^| findstr /v "169.254"') do (
+  set LAN_IP=%%a
+  goto :got_ip
+)
+:got_ip
+set LAN_IP=%LAN_IP: =%
+
+:: 6) Open Browser UI after 6 seconds
 start /b cmd /c "timeout /t 6 /nobreak >nul && start http://127.0.0.1:%VITE_PORT%/"
 
 echo [2/3] Starting servers...
@@ -95,9 +103,14 @@ echo.
 echo ============================================================
 echo  INSTRUCTIONS:
 echo  1. In the Chrome window, LOG IN to ChatGPT if prompted.
-echo  2. The Web App will open automatically at:
+echo  2. YOUR Web App URL (open on this PC):
 echo     http://127.0.0.1:%VITE_PORT%/
-echo  3. Keep this terminal window OPEN while generating.
+echo.
+echo  3. SHARE WITH OTHER USERS on same WiFi:
+echo     http://%LAN_IP%:%VITE_PORT%/
+echo     (They open this URL in their browser)
+echo.
+echo  4. Keep this terminal window OPEN while generating.
 echo ============================================================
 echo.
 

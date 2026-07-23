@@ -54,8 +54,8 @@ app.get('/api/jobs', (req, res) => {
   res.json(listJobs());
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   const cdpPort = process.env.CDP_PORT || process.env.BIGPICKLE_CDP_HOST?.split(':').pop() || '19321';
-  console.log(`[bigpickle-bridge] Listening on http://127.0.0.1:${PORT}`);
+  console.log(`[bigpickle-bridge] Listening on http://0.0.0.0:${PORT}`);
   console.log(`[bigpickle-bridge] Open Chrome with remote debugging on port ${cdpPort} for best results.`);
 });
