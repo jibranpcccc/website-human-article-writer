@@ -1,96 +1,126 @@
-# AI Article Writer — BigPickle ChatGPT Browser Bridge
+# 🖊️ BigPickle AI Article Writer
 
-A local article generator with a new **BigPickle → ChatGPT browser bridge**. The app still supports direct API calls to OpenCode/Gemini/OpenAI, but it can now route prompts to ChatGPT inside your real Chrome browser and capture the reply.
+Generate high-quality, human-written articles using **your own ChatGPT account** — no API key needed.
 
-## What is new
+---
 
-- **Browser automation bridge** (`server/`) — uses Playwright + Chrome CDP.
-- **Front-end provider: BigPickle → ChatGPT Browser**
-- **No API key needed** when using the bridge.
-- **Security fixes** vs. the previous version:
-  - No hardcoded API key fallback.
-  - Removed bundled `.env`/secrets from this working copy.
-  - `localStorage` reads are guarded.
-  - Markdown/HTML output is sanitized with DOMPurify.
-  - Dynamic text inserted into progress/banner/history is escaped.
+## ⚡ Quick Start (3 Steps)
 
-## Project structure
+### Step 1 — Download the app
+**[⬇️ Click here to Download](https://github.com/jibranpcccc/website-human-article-writer/archive/refs/heads/main.zip)**
+
+Unzip it anywhere on your computer (e.g. your Desktop).
+
+---
+
+### Step 2 — Install Node.js (one time only)
+If you don't have Node.js installed:
+**[⬇️ Download Node.js here](https://nodejs.org/)** → Install it → Done.
+
+---
+
+### Step 3 — Double-click `run-all.bat`
+That's it. The app opens automatically in your browser.
+
+- It will ask you to choose `1` (Visible Chrome) or `2` (Background)
+- **Always choose 1** the first time so you can log into ChatGPT
+- Log in to ChatGPT in the Chrome window that opens
+- The app opens at `http://127.0.0.1:19323`
+
+---
+
+## 🎬 First Time Setup (30 seconds)
+
+1. Double-click `run-all.bat`
+2. Press `1` → Enter (Visible Chrome)
+3. Press `1` → Enter (Local only)
+4. In the Chrome window → log in to **ChatGPT**
+5. Go to `http://127.0.0.1:19323` in your browser
+6. Select your website → type a keyword → click **Generate Full Output**
+
+---
+
+## ✅ Requirements
+
+| Requirement | Notes |
+|-------------|-------|
+| Windows 10 or 11 | Required |
+| Google Chrome | [Download here](https://www.google.com/chrome/) |
+| Node.js (v18+) | [Download here](https://nodejs.org/) |
+| ChatGPT account | Free or Plus — log in once |
+
+**No API key needed.** Uses your own ChatGPT browser session.
+
+---
+
+## 🌐 Sharing with Others
+
+When you run `run-all.bat`, it asks:
+
+> **"Do you want a PUBLIC INTERNET link?"**
+
+- Press `1` → Only you can use it (on this PC)
+- Press `2` → A public link is generated (e.g. `https://abc123.loca.lt`) — share it with anyone
+
+> ⚠️ The public link only works while your PC is running `run-all.bat`
+
+---
+
+## 🔧 How It Works
 
 ```
-.
-├── index.html                 # Main UI (added BigPickle provider option)
-├── package.json               # Added server + DOMPurify deps
-├── vite.config.js             # Added proxy for bridge
-├── src/
-│   ├── main.js                # Added bridge provider/model/status
-│   ├── api.js                 # Routes bigPickleBridge provider to bridge
-│   ├── bridgeClient.js        # Front-end bridge client
-│   ├── templates.js           # Existing prompts
-│   └── style.css              # Existing styling
-├── server/
-│   ├── index.js               # Express bridge server
-│   ├── bigPickleBridge.js     # Job queue
-│   ├── chatgptDriver.js       # Playwright/CDP ChatGPT driver
-│   ├── config.js              # Bridge config
-│   └── README.md              # Server setup details
-├── scripts/
-│   └── launch-chrome-cdp.bat  # Windows CDP launcher
-└── TEST_PLAN.md               # Step-by-step test plan
+Your Browser (UI)
+      ↓
+Vite Server (port 19323)
+      ↓
+Bridge Server (port 19322)
+      ↓
+Chrome with ChatGPT (port 19321)
+      ↓
+ChatGPT generates your article
 ```
 
-## Quick start
+All article generation happens through your own ChatGPT account in Chrome. No third-party API keys required.
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
+---
 
-2. **Launch Chrome with remote debugging** (persistent profile for session)
-   ```bash
-   scripts\launch-chrome-cdp.bat
-   ```
+## 📋 Features
 
-3. **Log in to ChatGPT once** in the Chrome window that opens.
+- ✅ Human-written articles (Anti-Skeleton V8.6)
+- ✅ No API key needed (uses your ChatGPT)
+- ✅ Temporary chat mode (no history saved in ChatGPT)
+- ✅ Medium intelligence mode (balanced speed + quality)
+- ✅ Blog image prompts (20 prompts per article)
+- ✅ Pinterest image prompts (30 prompts per article)
+- ✅ SEO meta title + description
+- ✅ Word + Markdown download
+- ✅ ZIP pack download (article + all prompts)
+- ✅ History of all generated articles
+- ✅ Batch mode (multiple keywords at once)
+- ✅ TressAtlas + TressCrew workspace switcher
 
-4. **Run the app + bridge together**
-   ```bash
-   npm run dev:all
-   ```
-   - Vite UI: `http://127.0.0.1:{BRIDGE_PORT}`
-   - Bridge server: `http://127.0.0.1:{BRIDGE_PORT}`
+---
 
-5. In the app sidebar, select **Provider: BigPickle → ChatGPT Browser**, enter a keyword, and click **Generate Full Output**.
+## ❓ Troubleshooting
 
-## Environment variables
+**App doesn't open?**
+→ Make sure Node.js is installed. Run `run-all.bat` again.
 
-Create a `.env` file from `.env.example` if you still want to use the old direct API modes (optional).
+**"ChatGPT login" error?**
+→ In the Chrome window, log into ChatGPT, then click Generate again.
 
-```bash
-VITE_MISTRAL_KEYS=""
-VITE_SUPABASE_URL=""
-VITE_SUPABASE_ANON_KEY=""
-```
+**Generate button not working?**
+→ Make sure Chrome opened and you are logged into ChatGPT.
 
-For the bridge:
+**Other users on same WiFi can't connect?**
+→ Share `http://YOUR-IP:19323` — your IP shows in the `run-all.bat` window.
 
-```bash
-BIGPICKLE_PORT=19322
-BIGPICKLE_HEADLESS=false
-BIGPICKLE_CDP_HOST=http://127.0.0.1:{BRIDGE_PORT}
-```
+---
 
-## Running bridge without the UI
+## 📦 Download
 
-```bash
-npm run server
-```
+**[⬇️ Download Latest Version (ZIP)](https://github.com/jibranpcccc/website-human-article-writer/archive/refs/heads/main.zip)**
 
-## Security notes
+---
 
-- Do **not** commit `.env` files.
-- Rotate exposed API keys if they were in the previous repo/git history.
-- The bridge runs only locally; it is not deployable to a static host.
-
-## License
-
-Private / project-specific.
+*Keep `run-all.bat` window open while using the app. Close it when done.*
