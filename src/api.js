@@ -68,8 +68,8 @@ function getMistralKey(index) {
 }
 
 const hasMistralKeys = MISTRAL_KEYS.length > 0;
-const IMAGE_PROMPT_MODEL = 'mistral-small-3.1-free'; // Free Mistral via OpenCode Zen
-const IMAGE_PROMPT_MAX_TOKENS = 6000; // Optimal limit for chunked prompts to prevent cutoff
+const IMAGE_PROMPT_MODEL = 'mimo-v2.5-free'; // Free model guaranteed on OpenCode Zen
+const IMAGE_PROMPT_MAX_TOKENS = 6000;
 
 function cleanArticleText(text) {
   if (!text) return '';
@@ -265,12 +265,11 @@ export async function generateContent({
   let imageBaseUrl = '/api-opencode/zen/v1/chat/completions';
 
   function getImageHeaders(keyIndex) {
-    // Use VITE_MISTRAL_KEYS (OpenCode keys) if available, otherwise fall back to apiKey
-    const key = hasMistralKeys ? getMistralKey(keyIndex) : apiKey;
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`
-    };
+    // Free OpenCode models don't strictly need auth, but send a key if we have one
+    const key = apiKey || (hasMistralKeys ? getMistralKey(keyIndex) : '');
+    const h = { 'Content-Type': 'application/json' };
+    if (key) h['Authorization'] = `Bearer ${key}`;
+    return h;
   }
 
   // Image prompts use KEYWORD ONLY — completely independent of article content
@@ -280,7 +279,7 @@ export async function generateContent({
   // ── CONCURRENT BACKGROUND IMAGE PROMPT GENERATION ──
   // Start image prompt generation concurrently right as article generation starts!
   // Skip entirely if we have no usable API key (BigPickle mode with no Mistral or direct key)
-  const canGenerateImagePrompts = hasMistralKeys || (!!apiKey && apiKey.trim().length > 10);
+  const canGenerateImagePrompts = true; // Always try — using free OpenCode model, falls back automatically
 
   const blogImagePromptsPromise = (async () => {
     if (!canGenerateImagePrompts) {
@@ -769,7 +768,7 @@ Keyword: ${keyword}`;
         provider: 'opencode',
         baseUrl: '/api-opencode/zen/v1/chat/completions',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${formatterKey}` },
-        model: 'mistral-small-3.1-free',
+        model: 'mimo-v2.5-free',
         systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
         messages: [{ role: 'user', content: formattingPrompt }],
         onReasoning: (text) => { if (onReasoning) onReasoning(text, 'Format & SEO: H2/H3 Headings'); }
