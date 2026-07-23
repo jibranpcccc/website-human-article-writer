@@ -55,7 +55,7 @@ export function isLoginPage(page) {
   return url.includes('/auth/login') || url.includes('/auth/');
 }
 
-async function waitForPromptArea(page, timeout = 10000) {
+async function waitForPromptArea(page, timeout = 15000) {
   const selectors = [
     '#prompt-textarea',
     '[data-testid="prompt-textarea"]',
@@ -86,7 +86,7 @@ async function detectActiveModel(page) {
     for (const sel of patterns) {
       const el = document.querySelector(sel);
       if (el && el.innerText) {
-        const txt = el.innerText.replace(/\\s+/g, ' ').trim();
+        const txt = el.innerText.replace(/\s+/g, ' ').trim();
         if (txt && txt.length < 80) return txt;
       }
     }
@@ -96,7 +96,6 @@ async function detectActiveModel(page) {
 
 /**
  * Try to enable temporary chat mode.
- * First try URL parameter, then attempt to click the temporary toggle if present.
  */
 async function enableTemporaryChat(page) {
   const url = page.url();
@@ -107,13 +106,11 @@ async function enableTemporaryChat(page) {
     await page.waitForTimeout(500);
   }
 
-  // Try clicking the temporary chat toggle if visible
   try {
     await page.evaluate(() => {
       const labels = Array.from(document.querySelectorAll('div, span, button, a'));
       const temp = labels.find(el => /temporary chat/i.test(el.innerText || el.textContent || ''));
       if (temp) {
-        // click the closest switch/button/label
         let clickable = temp.closest('button, a, [role="switch"]') || temp;
         clickable.click();
       }
@@ -123,73 +120,78 @@ async function enableTemporaryChat(page) {
   }
 }
 
+async function clickSendOrPressEnter(page) {
+  await page.waitForTimeout(400);
 
-async function clearEditor(editor, page) {
-  await editor.evaluate((el) => {
-    el.focus();
-    const sel = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    document.execCommand('delete', false);
-  });
-  await page.waitForTimeout(200);
-}
+  // Try finding and clicking enabled send button
+  const sendBtnLocator = page.locator('button[data-testid="send-button"], button[aria-label*="Send" i]').first();
+  const sendCount = await sendBtnLocator.count();
 
-async function clickSendOrPressEnter(page, editor) {
-  const sendClicked = await page.evaluate(() => {
-    const send = Array.from(document.querySelectorAll('button')).find(
-      b =>
-        (b.getAttribute('aria-label') || '').toLowerCase().includes('send') ||
-        b.getAttribute('data-testid') === 'send-button'
-    );
-    if (send && !send.disabled) {
-      send.click();
-      return true;
+  if (sendCount > 0) {
+    const isDisabled = await sendBtnLocator.isDisabled().catch(() => false);
+    if (!isDisabled) {
+      console.log('[driver] clicking send button...');
+      await sendBtnLocator.click({ force: true });
+      return;
     }
-    return false;
-  });
-  if (!sendClicked) {
-    await editor.press('Enter');
   }
+
+  // Fallback to keyboard press
+  console.log('[driver] send button disabled or not found, pressing Enter...');
+  await page.keyboard.press('Enter');
 }
 
 async function setPromptTextInstantly(page, text) {
-  const editor = await waitForPromptArea(page, 15000);
-  await page.evaluate((t) => {
+  const promptArea = page.locator('#prompt-textarea, [data-testid="prompt-textarea"], div[contenteditable="true"]').first();
+  await promptArea.waitFor({ timeout: 15000 });
+  await promptArea.click();
+  await page.waitForTimeout(200);
+
+  // Clear existing text natively
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Backspace');
+  await page.waitForTimeout(100);
+
+  // Insert text via keyboard.insertText (triggers all ProseMirror/React state handlers)
+  await page.keyboard.insertText(text);
+  await page.waitForTimeout(300);
+
+  // Fallback check: if text was not inserted, evaluate DOM insert
+  const hasText = await page.evaluate(() => {
     const el = document.querySelector('#prompt-textarea') || 
                document.querySelector('[data-testid="prompt-textarea"]') ||
                document.querySelector('div[contenteditable="true"]');
-    if (el) {
-      el.focus();
-      const sel = window.getSelection();
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      sel.removeAllRanges();
-      sel.addRange(range);
-      
-      const success = document.execCommand('insertText', false, t);
-      if (!success || !el.innerText || el.innerText.length < 5) {
-        el.innerText = t;
-        el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: t }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
+    return el && (el.innerText || el.textContent || '').trim().length > 5;
+  });
+
+  if (!hasText) {
+    await page.evaluate((t) => {
+      const el = document.querySelector('#prompt-textarea') || 
+                 document.querySelector('[data-testid="prompt-textarea"]') ||
+                 document.querySelector('div[contenteditable="true"]');
+      if (el) {
+        el.focus();
+        const success = document.execCommand('insertText', false, t);
+        if (!success || !el.innerText || el.innerText.length < 5) {
+          el.innerText = t;
+          el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: t }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
       }
-    }
-  }, text);
-  return editor;
+    }, text);
+  }
+
+  return promptArea;
 }
 
 async function sendConversationTurn(page, text, timeoutMs = DEFAULT_TIMEOUT_MS) {
-  const editor = await setPromptTextInstantly(page, text);
-  await page.waitForTimeout(300);
-  await clickSendOrPressEnter(page, editor);
+  await setPromptTextInstantly(page, text);
+  await clickSendOrPressEnter(page);
   await waitForResponseComplete(page, timeoutMs);
   return getLastResponse(page);
 }
 
 function stripDuplicateH1AndMeta(text) {
-  // Remove [META] lines and any H1 that appears (to avoid duplicates when concatenating)
   return text
     .replace(/^\s*\[META\]:.*$/gim, '')
     .replace(/^\s*#\s+.+$/gim, '')
@@ -244,7 +246,6 @@ async function prepareChatSession(page) {
     await page.goto('https://chatgpt.com/?temporary-chat=true', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1500);
   } else {
-    // Click 'New chat' button to open a fresh session instantly
     const newChatClicked = await page.evaluate(() => {
       const btn = document.querySelector('[data-testid="create-new-chat-button"]') ||
                   Array.from(document.querySelectorAll('a, button')).find(b => (b.innerText || '').trim() === 'New chat');
@@ -270,11 +271,8 @@ async function prepareChatSession(page) {
 export async function sendThreePartPrompt(page, { prompt, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   await prepareChatSession(page);
 
-  // Part 1: send full master prompt with keyword
   const part1 = await sendConversationTurn(page, prompt, timeoutMs);
-  // Part 2
   const part2 = await sendConversationTurn(page, 'Next Part. Write Part 2 now (~950 words, maximum 1000 words).', timeoutMs);
-  // Part 3
   const part3 = await sendConversationTurn(page, 'Next Part. Write Part 3 now (~950 words, maximum 1000 words, completing the ~3000-word article).', timeoutMs);
 
   const cleanPart2 = stripDuplicateH1AndMeta(part2);
@@ -291,9 +289,8 @@ export async function sendPrompt(page, { prompt, timeoutMs = DEFAULT_TIMEOUT_MS 
 
   await prepareChatSession(page);
 
-  const editor = await setPromptTextInstantly(page, prompt);
-  await page.waitForTimeout(300);
-  await clickSendOrPressEnter(page, editor);
+  await setPromptTextInstantly(page, prompt);
+  await clickSendOrPressEnter(page);
 
   await waitForResponseComplete(page, timeoutMs);
   const responseText = await getLastResponse(page);
@@ -302,68 +299,86 @@ export async function sendPrompt(page, { prompt, timeoutMs = DEFAULT_TIMEOUT_MS 
 
 export async function waitForResponseComplete(page, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const start = Date.now();
-  await page.waitForTimeout(2000); // give ChatGPT a moment to start generating
+  await page.waitForTimeout(2000);
 
   let lastLength = 0;
   let stable = 0;
+  let emptyCheckCount = 0;
 
   while (Date.now() - start < timeoutMs) {
     await page.waitForTimeout(1500);
 
-    // Check if ChatGPT is still generating or thinking (Stop button active)
     const isGenerating = await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
-      const stopBtn = buttons.find(b => {
+      return buttons.some(b => {
         const label = (b.getAttribute('aria-label') || '').toLowerCase();
         const testId = (b.getAttribute('data-testid') || '').toLowerCase();
         return label.includes('stop') || testId.includes('stop');
       });
-      return !!stopBtn;
     });
 
     if (isGenerating) {
-      stable = 0; // still generating, keep waiting
+      stable = 0;
+      emptyCheckCount = 0;
       continue;
     }
 
     const current = await getLastResponse(page);
-    if (current.length > 50 && current.length === lastLength) {
+
+    if (current.length === 0) {
+      emptyCheckCount++;
+      if (emptyCheckCount === 5) {
+        console.log('[driver] response empty, re-triggering send via Enter key...');
+        await page.keyboard.press('Enter').catch(() => {});
+      }
+      if (emptyCheckCount > 15) {
+        throw new Error('ChatGPT failed to start generating a response. Please verify you are logged into ChatGPT in Chrome.');
+      }
+      continue;
+    }
+
+    if (current.length === lastLength) {
       stable++;
-      if (stable >= 3) return; // finished and text length is stable
+      if (stable >= 2) return;
     } else {
       stable = 0;
       lastLength = current.length;
     }
   }
+
+  console.log('[driver] warning: response completion wait reached timeout.');
 }
 
 export async function getLastResponse(page) {
   return page.evaluate(() => {
-    // 1. Check ProseMirror / writing-block editor containers (Canvas mode)
-    const proseMirror = Array.from(document.querySelectorAll('.ProseMirror, [data-writing-block-fullscreen-editor-region="true"], [class*="writing-block-editor"]'));
-    if (proseMirror.length) {
-      const text = (proseMirror[proseMirror.length - 1].innerText || proseMirror[proseMirror.length - 1].textContent || '').trim();
-      if (text.length > 100) return text;
+    // 1. Check Canvas mode / fullscreen editor (exclude #prompt-textarea)
+    const canvasEditors = Array.from(document.querySelectorAll('[data-writing-block-fullscreen-editor-region="true"], [class*="writing-block-editor"]'));
+    if (canvasEditors.length) {
+      const text = (canvasEditors[canvasEditors.length - 1].innerText || canvasEditors[canvasEditors.length - 1].textContent || '').trim();
+      if (text.length > 50) return text;
     }
 
-    // 2. Check markdown / prose containers
-    const markdowns = Array.from(document.querySelectorAll('.markdown, [class*="markdown"], .prose'));
-    if (markdowns.length) {
-      const text = (markdowns[markdowns.length - 1].innerText || markdowns[markdowns.length - 1].textContent || '').trim();
-      if (text.length > 100) return text;
-    }
-
-    // 3. Check data-message-author-role="assistant"
-    const nodes = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
-    if (nodes.length) {
-      const text = (nodes[nodes.length - 1].innerText || nodes[nodes.length - 1].textContent || '').trim();
+    // 2. Check assistant message role elements
+    const assistantNodes = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
+    if (assistantNodes.length) {
+      const lastNode = assistantNodes[assistantNodes.length - 1];
+      const markdownInside = lastNode.querySelector('.markdown, .prose');
+      const text = ((markdownInside || lastNode).innerText || (markdownInside || lastNode).textContent || '').trim();
       if (text.length > 0) return text;
     }
 
-    // 4. Fallback to agent-turn
+    // 3. Check markdown / prose containers outside #prompt-textarea
+    const markdowns = Array.from(document.querySelectorAll('.markdown, [class*="markdown"], .prose')).filter(el => !el.closest('#prompt-textarea'));
+    if (markdowns.length) {
+      const text = (markdowns[markdowns.length - 1].innerText || markdowns[markdowns.length - 1].textContent || '').trim();
+      if (text.length > 0) return text;
+    }
+
+    // 4. Fallback to agent-turn containers
     const agentTurns = Array.from(document.querySelectorAll('.agent-turn, [class*="agent-turn"]'));
     if (agentTurns.length) {
-      return (agentTurns[agentTurns.length - 1].innerText || agentTurns[agentTurns.length - 1].textContent || '').trim();
+      const lastTurn = agentTurns[agentTurns.length - 1];
+      return (lastTurn.innerText || lastTurn.textContent || '').trim();
     }
 
     return '';

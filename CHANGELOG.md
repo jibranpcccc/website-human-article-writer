@@ -2,6 +2,19 @@
 
 All notable changes to the Website Human Article Writer project are documented in this file.
 
+## [v2.1.5] - 2026-07-23
+
+### 🐛 Critical Bug Fixes
+- **ChatGPT Prompt Input & Send Submission Fix**:
+  - Replaced DOM `execCommand` with Playwright native `page.keyboard.insertText()` to properly trigger ChatGPT ProseMirror/React input state handlers.
+  - Ensures the Send button (`[data-testid="send-button"]`) becomes **ENABLED** automatically upon text insertion.
+  - Replaced fallback Enter keys with explicit locator clicks on enabled Send buttons.
+- **Infinite Waiting Loop Resolution**:
+  - Fixed `waitForResponseComplete()` logic to detect non-generating states immediately and prevent 5-minute hanging loops when responses are empty.
+  - Added auto-retriggering and explicit user error reporting if ChatGPT fails to start generating within 15 seconds.
+- **Canvas vs. Prompt Textarea Selector Disambiguation**:
+  - Excluded `#prompt-textarea` from `.ProseMirror` selector queries in `getLastResponse()` to prevent reading empty prompt boxes as assistant responses.
+
 ---
 
 ## [v2.1.0] - 2026-07-22
