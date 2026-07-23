@@ -66,7 +66,7 @@ echo  1. Visible browser window  [RECOMMENDED]
 echo     - Opens Chrome so you can log into ChatGPT.
 echo.
 echo  2. Headless browser  [BACKGROUND]
-echo     - Runs Chrome in background.
+echo     - Runs Chrome in background (must be logged in already).
 echo.
 set /p MODE_CHOICE="Select mode [1 or 2]: "
 
@@ -80,7 +80,19 @@ if "%MODE_CHOICE%"=="2" (
   echo [Mode] VISIBLE selected.
 )
 
+echo.
+echo Do you want a PUBLIC INTERNET link (so anyone in the world can access)?
+echo.
+echo  1. NO  - Only usable on this PC and same WiFi  [DEFAULT]
+echo  2. YES - Generate a public internet link via tunnel
+echo.
+set /p TUNNEL_CHOICE="Select [1 or 2]: "
+
 if not exist "%SESSION_DIR%" mkdir "%SESSION_DIR%"
+
+:: Remove stale Chrome lock files
+del /f /q "%SESSION_DIR%\SingletonLock" 2>nul
+del /f /q "%SESSION_DIR%\SingletonSocket" 2>nul
 
 :: 4) Launch Chrome
 echo.
@@ -98,23 +110,38 @@ set LAN_IP=%LAN_IP: =%
 :: 6) Open Browser UI after 6 seconds
 start /b cmd /c "timeout /t 6 /nobreak >nul && start http://127.0.0.1:%VITE_PORT%/"
 
+:: 7) If tunnel selected, start localtunnel in a separate window
+if "%TUNNEL_CHOICE%"=="2" (
+  echo [3/3] Starting public internet tunnel...
+  echo NOTE: Your public URL will appear in the new window that opens.
+  echo       Copy that URL and send it to your users anywhere in the world.
+  echo.
+  start "Public Internet Tunnel" cmd /k "npx -y localtunnel --port %VITE_PORT% && pause"
+)
+
 echo [2/3] Starting servers...
 echo.
 echo ============================================================
-echo  INSTRUCTIONS:
-echo  1. In the Chrome window, LOG IN to ChatGPT if prompted.
-echo  2. YOUR Web App URL (open on this PC):
+echo  READY! Here are your access links:
+echo.
+echo  >> YOU (this PC):
 echo     http://127.0.0.1:%VITE_PORT%/
 echo.
-echo  3. SHARE WITH OTHER USERS on same WiFi:
+echo  >> SAME WiFi users:
 echo     http://%LAN_IP%:%VITE_PORT%/
-echo     (They open this URL in their browser)
 echo.
-echo  4. Keep this terminal window OPEN while generating.
+if "%TUNNEL_CHOICE%"=="2" (
+  echo  >> INTERNET users (anyone in world):
+  echo     Check the "Public Internet Tunnel" window for your link.
+  echo     It looks like: https://abc123.loca.lt
+  echo.
+)
+echo  IMPORTANT: Keep this window OPEN while the app is in use.
+echo  IMPORTANT: Log into ChatGPT in the Chrome window if prompted.
 echo ============================================================
 echo.
 
-:: 6) Start Servers via pure Node.js launcher
+:: 8) Start Servers
 node server/startAll.js
 
 if %errorlevel% neq 0 (
