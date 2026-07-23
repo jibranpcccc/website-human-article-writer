@@ -68,7 +68,7 @@ function getMistralKey(index) {
 }
 
 const hasMistralKeys = MISTRAL_KEYS.length > 0;
-const IMAGE_PROMPT_MODEL = hasMistralKeys ? 'mistral-large-latest' : 'mimo-v2.5-free';
+const IMAGE_PROMPT_MODEL = 'mistral-small-3.1-free'; // Free Mistral via OpenCode Zen
 const IMAGE_PROMPT_MAX_TOKENS = 6000; // Optimal limit for chunked prompts to prevent cutoff
 
 function cleanArticleText(text) {
@@ -260,11 +260,12 @@ export async function generateContent({
     headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
-  // Image prompts: use Mistral API directly with VITE_MISTRAL_KEYS, fall back to OpenCode free model
-  const imageProvider = hasMistralKeys ? 'mistral' : 'opencode';
-  let imageBaseUrl = hasMistralKeys ? '/api-mistral/v1/chat/completions' : '/api-opencode/zen/v1/chat/completions';
+  // Image prompts: always use OpenCode Zen with free Mistral model
+  const imageProvider = 'opencode';
+  let imageBaseUrl = '/api-opencode/zen/v1/chat/completions';
 
   function getImageHeaders(keyIndex) {
+    // Use VITE_MISTRAL_KEYS (OpenCode keys) if available, otherwise fall back to apiKey
     const key = hasMistralKeys ? getMistralKey(keyIndex) : apiKey;
     return {
       'Content-Type': 'application/json',
@@ -757,17 +758,18 @@ Keyword: ${keyword}`;
   // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest and articleV15 modes)
   let formattedArticle = finalArticleText;
 
-  // Stage 2A: For bridge-generated articles (V86/V13), use Mistral directly for heading formatting
-  if (fromBridge && (mode === 'articleV86' || mode === 'articleV13') && hasMistralKeys) {
-    onProgress('Format & SEO: Adding H2/H3 headings (Mistral)...', 75);
+  // Stage 2A: For bridge-generated articles (V86/V13), use OpenCode Zen + free Mistral for heading formatting
+  const canFormatHeadings = hasMistralKeys || (!!apiKey && apiKey.trim().length > 10);
+  if (fromBridge && (mode === 'articleV86' || mode === 'articleV13') && canFormatHeadings) {
+    onProgress('Format & SEO: Adding H2/H3 headings (Mistral free via OpenCode)...', 75);
     try {
       const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
-      const mistralKey = getMistralKey(0);
+      const formatterKey = hasMistralKeys ? getMistralKey(0) : apiKey;
       let rawFormatted = await callAPI({
-        provider: 'mistral',
-        baseUrl: '/api-mistral/v1/chat/completions',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
-        model: 'mistral-small-latest',
+        provider: 'opencode',
+        baseUrl: '/api-opencode/zen/v1/chat/completions',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${formatterKey}` },
+        model: 'mistral-small-3.1-free',
         systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
         messages: [{ role: 'user', content: formattingPrompt }],
         onReasoning: (text) => { if (onReasoning) onReasoning(text, 'Format & SEO: H2/H3 Headings'); }
