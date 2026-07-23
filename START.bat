@@ -68,16 +68,16 @@ echo  [OK] Packages ready.
 
 :: ── STEP 4: Locate Chrome ────────────────────────────────────
 echo  [4/6] Locating Chrome...
-set CHROME_PATH=
+set "CHROME_PATH="
 if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
-  set CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe
+  set "CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe"
 ) else if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" (
-  set CHROME_PATH=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe
+  set "CHROME_PATH=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
 ) else if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" (
-  set CHROME_PATH=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe
+  set "CHROME_PATH=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 )
 
-if "%CHROME_PATH%"=="" (
+if not defined CHROME_PATH (
   color 0C
   echo.
   echo  ERROR: Chrome not found. Install from https://www.google.com/chrome/
@@ -97,8 +97,8 @@ echo  [OK] Chrome launched.
 
 :: ── STEP 6: Start servers ────────────────────────────────────
 echo  [6/6] Starting servers...
-del /f /q "%~dp0server_log.txt" 2>nul
-start "BP-Servers" /MIN cmd /c "node server/startAll.js > "%~dp0server_log.txt" 2>&1"
+set "LOG_FILE=%~dp0server_log.txt"
+start "BP-Servers" /MIN cmd /c "node server/startAll.js > "%LOG_FILE%" 2>&1"
 
 :: Wait for port 19323 to actually start accepting connections
 echo  [..] Waiting for app server to be ready (up to 30 seconds)...
