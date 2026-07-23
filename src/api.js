@@ -57,10 +57,43 @@ export async function saveArticleToSupabase({
 // ============================================================
 // MISTRAL API KEY ROTATION & FALLBACK CONFIGURATION
 // ============================================================
-const MISTRAL_KEYS = (getEnvVar('VITE_MISTRAL_KEYS') || '')
-  .split(',')
-  .map(k => k.trim())
-  .filter(Boolean);
+// Built-in Mistral API keys (rotate across 25 keys for rate limit distribution)
+const DEFAULT_MISTRAL_KEYS = [
+  '62SDd9UJtpDxbHyiqYWh5EPQdAu0uDhL',
+  'dgVB1czhgwzSGMneUz0LKRjz7ddwAyjp',
+  'PcQnVh4OhORa6I6VJdKdSm7HUtnvNTOy',
+  'xd5VyypEBQZBzidRA1ZqaRU6qVkiW7nI',
+  'czri78QlBdftBW6r7vqzRVlMTjARlcBR',
+  'FsnwQQg2gn69LGhzLfgUqlPpQYO4Kcxz',
+  'CQNSrtXghruyFKTfOM2Ronqf2JA6i9J5',
+  'LGVQ662aRXJs100e65oIDYBXrResmZcM',
+  'ZzuaV6cRZyVDkQCkrIpkixCIvLNnBU7h',
+  '3jHGK8YFYibWUSM8aELr1P6SGJITpO4Q',
+  'CqBHqsjHeXqPdvMxmXHdAgTrrdqeKgYh',
+  'fRt6mssSiHusKExoWjFNpmmmtqgI4r1w',
+  '6Obxz18E1hJlhWMgZaG2sSLCl8a11wuP',
+  'JoYYfWEM6pQfD5ttp9BXSeXiudW5etZ3',
+  'za3mLj5ZcaWTdEaOwHWFDstNJk62Vn1b',
+  'GSVKchS6I26N0lBg2n9v6Airc0FuE5YR',
+  'T0dOVv3S4H2T9xonOoyTq1hS7dnc4npl',
+  'CDTExgMq7eSf2jlN7DQJajJJbr4V43fz',
+  'BybaI3QSZQKDSwSWCvltCCryJynFyvfD',
+  'iMYGKOUSGt1NLrsBTLlNu3HgOngnhT8e',
+  '7kYpaMIclrYoxOgOdNWarktmu3IAuKtx',
+  'uDDUJrcS9fGur1WqvsRgR5UIDGAqNmyP',
+  'H0RFxcZhD9fKAwVwwvggPD3yiwB5ZBty',
+  'MgtrozX7p8v2ZDXPxz8NgpAKQW2we5zl',
+  'TOadwPs6kEhGFWfEv3pKNPAHM5fSsl26'
+];
+
+const MISTRAL_KEYS = (() => {
+  const envKeys = (getEnvVar('VITE_MISTRAL_KEYS') || '')
+    .split(',')
+    .map(k => k.trim())
+    .filter(Boolean);
+  return envKeys.length > 0 ? envKeys : DEFAULT_MISTRAL_KEYS;
+})();
+
 
 function getMistralKey(index) {
   if (MISTRAL_KEYS.length === 0) return null;
