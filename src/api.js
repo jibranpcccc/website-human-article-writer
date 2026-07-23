@@ -260,9 +260,9 @@ export async function generateContent({
     headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
-  // Image prompts use OpenCode endpoint with Mistral model (keys are OpenCode keys)
-  const imageProvider = 'opencode';
-  let imageBaseUrl = '/api-opencode/zen/v1/chat/completions';
+  // Image prompts: use Mistral API directly with VITE_MISTRAL_KEYS, fall back to OpenCode free model
+  const imageProvider = hasMistralKeys ? 'mistral' : 'opencode';
+  let imageBaseUrl = hasMistralKeys ? '/api-mistral/v1/chat/completions' : '/api-opencode/zen/v1/chat/completions';
 
   function getImageHeaders(keyIndex) {
     const key = hasMistralKeys ? getMistralKey(keyIndex) : apiKey;
@@ -757,15 +757,15 @@ Keyword: ${keyword}`;
   // 3. STAGE 2: HEADING FORMATTER (skipped for quickTest and articleV15 modes)
   let formattedArticle = finalArticleText;
 
-  // Stage 2A: For bridge-generated articles (V86/V13), use OpenCode+Mistral for heading formatting
+  // Stage 2A: For bridge-generated articles (V86/V13), use Mistral directly for heading formatting
   if (fromBridge && (mode === 'articleV86' || mode === 'articleV13') && hasMistralKeys) {
-    onProgress('Format & SEO: Adding H2/H3 headings (Mistral via OpenCode)...', 75);
+    onProgress('Format & SEO: Adding H2/H3 headings (Mistral)...', 75);
     try {
       const formattingPrompt = templates.headingFormatter.replace('{article_content}', finalArticleText);
       const mistralKey = getMistralKey(0);
       let rawFormatted = await callAPI({
-        provider: 'opencode',
-        baseUrl: '/api-opencode/zen/v1/chat/completions',
+        provider: 'mistral',
+        baseUrl: '/api-mistral/v1/chat/completions',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
         model: 'mistral-small-latest',
         systemInstruction: 'You are an expert content formatting editor. Follow the rules exactly. Output ONLY the formatted article text. Do NOT add any introductory text, concluding remarks, or markdown horizontal rules before/after the content.',
@@ -777,7 +777,7 @@ Keyword: ${keyword}`;
         formattedArticle = rawFormatted;
       }
     } catch (err) {
-      console.warn('[api] Heading formatter failed (non-fatal), using raw article:', err.message);
+      console.warn('[api] Heading formatter failed (non-fatal):', err.message);
       if (onProgress) onProgress(`⚠️ Heading formatter error: ${err.message}`, 78);
       formattedArticle = finalArticleText;
     }
