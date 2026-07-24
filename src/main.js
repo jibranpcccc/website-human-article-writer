@@ -522,6 +522,7 @@ async function handleGenerate() {
   DOM.batchQueueContainer.style.display = 'flex';
 
   let successCount = 0;
+  const failedItems = []; // Track failures for retry
 
   // Batch loop
   for (let i = 0; i < keywords.length; i++) {
@@ -613,30 +614,111 @@ async function handleGenerate() {
       logProgress(`Failed to generate "${currentKeyword}": ${err.message}`, 'error');
       updateQueueItemVisual(i, 'failed', 'Failed ✗');
 
-      // If only one keyword and it fails, immediately restore button + hide progress panel
+      // Track for retry queue
+      failedItems.push({ keyword: currentKeyword, queueIndex: i, error: err.message });
+
+      // If only one keyword and it fails, will be retried below
       if (keywords.length === 1) {
-        STATE.isBatchRunning = false;
-        DOM.generateBtn.disabled = false;
-        DOM.generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Full Output';
-        DOM.progressPanel.style.display = 'none';
-        DOM.cancelBatchBtn.style.display = 'none';
-        alert(`Generation failed: ${err.message}`);
-        return;
+        // Don't return — fall through to retry logic
       }
       // Continue loop for other keywords in the batch queue even if one fails
     }
   }
 
-  // Batch loop completed or cancelled
+  // ── AUTO RETRY LOOP ──
+  // Retry each failed keyword up to 3 times before giving up
+  if (failedItems.length > 0 && !STATE.isBatchCancelled) {
+    logProgress(`\n🔄 Retrying ${failedItems.length} failed keyword(s) — up to 3 attempts each...`);
+    const MAX_RETRIES = 3;
+
+    for (const failedItem of failedItems) {
+      let retrySuccess = false;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        if (STATE.isBatchCancelled) break;
+
+        updateQueueItemVisual(failedItem.queueIndex, 'active', `Retry ${attempt}/${MAX_RETRIES}...`);
+        DOM.progressLog.innerHTML = '';
+        logProgress(`🔄 Retry ${attempt}/${MAX_RETRIES} for "${failedItem.keyword}"`);
+        updateProgress(`Retrying "${failedItem.keyword}" (attempt ${attempt} of ${MAX_RETRIES})...`, 10);
+
+        // Wait 3 seconds between retries to give bridge/ChatGPT time to recover
+        if (attempt > 1) {
+          logProgress(`Waiting 3s before retry ${attempt}...`);
+          await new Promise(r => setTimeout(r, 3000));
+        }
+
+        try {
+          startLiveTimer();
+          resetPipelineVisuals();
+          STATE.keyword = failedItem.keyword;
+
+          const result = await generateContent({
+            provider: STATE.provider,
+            apiKey: STATE.apiKey,
+            model: STATE.model,
+            mode: STATE.mode,
+            keyword: failedItem.keyword,
+            supportingKeywords: STATE.supportingKeywords,
+            onProgress: (status, percent) => updateProgress(status, percent),
+            onDraftUpdate: (draftText) => {
+              DOM.liveDraftPreview.textContent = draftText;
+              const words = draftText.trim().split(/\s+/).filter(w => w.length > 0).length;
+              DOM.liveWordCount.textContent = `${words} words`;
+            },
+            onReasoning: (reasoningText, stageName) => {
+              DOM.thinkingContainer.style.display = 'flex';
+              DOM.thinkingStageTitle.textContent = stageName;
+              DOM.thinkingPreviewBox.textContent = reasoningText;
+              DOM.thinkingPreviewBox.scrollTop = DOM.thinkingPreviewBox.scrollHeight;
+            }
+          });
+
+          stopLiveTimer();
+          const elapsedSeconds = liveTimerSeconds;
+          if (DOM.generationTimeValue) DOM.generationTimeValue.textContent = formatDuration(elapsedSeconds);
+
+          renderResults(result);
+          saveToHistory(result, elapsedSeconds);
+          updateQueueItemVisual(failedItem.queueIndex, 'completed', `Retried ✓ (attempt ${attempt})`);
+          logProgress(`✅ Retry succeeded for "${failedItem.keyword}" on attempt ${attempt}`);
+          successCount++;
+          retrySuccess = true;
+          break; // Stop retrying this keyword — it succeeded
+
+        } catch (retryErr) {
+          stopLiveTimer();
+          console.error(`[Retry ${attempt}] Failed:`, retryErr);
+          logProgress(`❌ Retry ${attempt}/${MAX_RETRIES} failed: ${retryErr.message}`, 'error');
+
+          if (attempt === MAX_RETRIES) {
+            updateQueueItemVisual(failedItem.queueIndex, 'failed', `Failed (all ${MAX_RETRIES} retries)`);
+            logProgress(`⛔ "${failedItem.keyword}" failed after ${MAX_RETRIES} retries. Giving up.`, 'error');
+          }
+        }
+      }
+
+      if (!retrySuccess) {
+        // Already marked as failed above
+      }
+    }
+  }
+
+  // Batch + retries fully complete
   STATE.isBatchRunning = false;
   DOM.generateBtn.disabled = false;
   DOM.generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Full Output';
   DOM.cancelBatchBtn.style.display = 'none';
 
+  const totalAttempted = keywords.length;
+  const finalFailed = totalAttempted - successCount;
+
   if (STATE.isBatchCancelled) {
-    alert(`Batch generation cancelled. ${successCount} articles completed.`);
+    alert(`Batch cancelled. ${successCount} articles completed.`);
+  } else if (finalFailed === 0) {
+    alert(`✅ Batch complete! All ${successCount} articles generated successfully.`);
   } else {
-    alert(`Batch generation complete! ${successCount} of ${keywords.length} articles generated successfully.`);
+    alert(`Batch complete.\n✅ ${successCount} succeeded\n❌ ${finalFailed} failed after 3 retries each\n\nCheck the queue list for details.`);
   }
 }
 
