@@ -344,25 +344,24 @@ export async function generateContent({
       { range: 'Images 16–20', count: 5, keyIndex: 3 }
     ];
 
-    // Sequential calls with delay to avoid Mistral rate limits (free tier: 1 req/sec)
-    const blogPartResults = [];
-    for (const chunk of blogChunksConfig) {
-      const partResult = await callAPI({
-        provider: imageProvider,
-        baseUrl: imageBaseUrl,
-        headers: getImageHeaders(chunk.keyIndex),
-        model: IMAGE_PROMPT_MODEL,
-        maxTokens: IMAGE_PROMPT_MAX_TOKENS,
-        systemInstruction: blogSysInstruction,
-        messages: [{ role: 'user', content: buildBlogPartRequest(chunk.range, chunk.count) }],
-        onReasoning: (text) => {
-          if (onReasoning) onReasoning(text, `Blog ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
-        }
-      });
-      blogPartResults.push(partResult);
-      if (onProgress) onProgress(`Blog image prompts: ${chunk.range} done`, 82);
-      await new Promise(r => setTimeout(r, 600)); // 600ms between calls — respects rate limits
-    }
+    // Parallel calls — each chunk uses a DIFFERENT Mistral key (key 0,1,2,3)
+    // No rate limiting since each key has its own quota — blazing fast!
+    const blogPartResults = await Promise.all(
+      blogChunksConfig.map(chunk =>
+        callAPI({
+          provider: imageProvider,
+          baseUrl: imageBaseUrl,
+          headers: getImageHeaders(chunk.keyIndex),
+          model: IMAGE_PROMPT_MODEL,
+          maxTokens: IMAGE_PROMPT_MAX_TOKENS,
+          systemInstruction: blogSysInstruction,
+          messages: [{ role: 'user', content: buildBlogPartRequest(chunk.range, chunk.count) }],
+          onReasoning: (text) => {
+            if (onReasoning) onReasoning(text, `Blog ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
+          }
+        })
+      )
+    );
 
     return blogPartResults.join('\n\n')
       .replace(/\n{3,}/g, '\n\n')
@@ -408,25 +407,23 @@ Do NOT write any descriptions, introductions, or other text. Just output the num
       { range: 'Images 26–30', count: 5, keyIndex: 9 }
     ];
 
-    // Sequential calls with delay to avoid Mistral rate limits
-    const pinPartResults = [];
-    for (const chunk of chunksConfig) {
-      const partResult = await callAPI({
-        provider: imageProvider,
-        baseUrl: imageBaseUrl,
-        headers: getImageHeaders(chunk.keyIndex),
-        model: IMAGE_PROMPT_MODEL,
-        maxTokens: IMAGE_PROMPT_MAX_TOKENS,
-        systemInstruction: pinterestSysInstruction,
-        messages: [{ role: 'user', content: buildPartRequest(chunk.range, chunk.count) }],
-        onReasoning: (text) => {
-          if (onReasoning) onReasoning(text, `Pinterest ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
-        }
-      });
-      pinPartResults.push(partResult);
-      if (onProgress) onProgress(`Pinterest image prompts: ${chunk.range} done`, 88);
-      await new Promise(r => setTimeout(r, 600));
-    }
+    // Parallel calls — each chunk uses a DIFFERENT Mistral key (key 4,5,6,7,8,9)
+    const pinPartResults = await Promise.all(
+      chunksConfig.map(chunk =>
+        callAPI({
+          provider: imageProvider,
+          baseUrl: imageBaseUrl,
+          headers: getImageHeaders(chunk.keyIndex),
+          model: IMAGE_PROMPT_MODEL,
+          maxTokens: IMAGE_PROMPT_MAX_TOKENS,
+          systemInstruction: pinterestSysInstruction,
+          messages: [{ role: 'user', content: buildPartRequest(chunk.range, chunk.count) }],
+          onReasoning: (text) => {
+            if (onReasoning) onReasoning(text, `Pinterest ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
+          }
+        })
+      )
+    );
 
     return pinPartResults.join('\n\n')
       .replace(/\n{3,}/g, '\n\n')
@@ -973,11 +970,8 @@ async function callAPI({ provider, baseUrl, headers, model, systemInstruction, m
         let response;
         try {
           const requestHeaders = { ...headers };
-          if (provider === 'mistral' && MISTRAL_KEYS.length > 0) {
-            const randomIndex = Math.floor(Math.random() * MISTRAL_KEYS.length);
-            const key = MISTRAL_KEYS[randomIndex];
-            requestHeaders['Authorization'] = `Bearer ${key}`;
-          }
+          // For Mistral: use the key already set in headers (dedicated per-chunk key)
+          // Do NOT randomly override — we assign a specific key per chunk to distribute load
 
           response = await fetch(baseUrl, {
             method: 'POST',
