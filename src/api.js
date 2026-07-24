@@ -102,7 +102,7 @@ function getMistralKey(index) {
 
 const hasMistralKeys = MISTRAL_KEYS.length > 0;
 const IMAGE_PROMPT_MODEL = hasMistralKeys ? 'mistral-large-latest' : 'mimo-v2.5-free';
-const IMAGE_PROMPT_MAX_TOKENS = 6000;
+const IMAGE_PROMPT_MAX_TOKENS = 4000; // Reduced to stay within free tier limits
 
 function cleanArticleText(text) {
   if (!text) return '';
@@ -344,22 +344,25 @@ export async function generateContent({
       { range: 'Images 16–20', count: 5, keyIndex: 3 }
     ];
 
-    const blogPartResults = await Promise.all(
-      blogChunksConfig.map(chunk =>
-        callAPI({
-          provider: imageProvider,
-          baseUrl: imageBaseUrl,
-          headers: getImageHeaders(chunk.keyIndex),
-          model: IMAGE_PROMPT_MODEL,
-          maxTokens: IMAGE_PROMPT_MAX_TOKENS,
-          systemInstruction: blogSysInstruction,
-          messages: [{ role: 'user', content: buildBlogPartRequest(chunk.range, chunk.count) }],
-          onReasoning: (text) => {
-            if (onReasoning) onReasoning(text, `Blog ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
-          }
-        })
-      )
-    );
+    // Sequential calls with delay to avoid Mistral rate limits (free tier: 1 req/sec)
+    const blogPartResults = [];
+    for (const chunk of blogChunksConfig) {
+      const partResult = await callAPI({
+        provider: imageProvider,
+        baseUrl: imageBaseUrl,
+        headers: getImageHeaders(chunk.keyIndex),
+        model: IMAGE_PROMPT_MODEL,
+        maxTokens: IMAGE_PROMPT_MAX_TOKENS,
+        systemInstruction: blogSysInstruction,
+        messages: [{ role: 'user', content: buildBlogPartRequest(chunk.range, chunk.count) }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, `Blog ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
+        }
+      });
+      blogPartResults.push(partResult);
+      if (onProgress) onProgress(`Blog image prompts: ${chunk.range} done`, 82);
+      await new Promise(r => setTimeout(r, 600)); // 600ms between calls — respects rate limits
+    }
 
     return blogPartResults.join('\n\n')
       .replace(/\n{3,}/g, '\n\n')
@@ -405,22 +408,25 @@ Do NOT write any descriptions, introductions, or other text. Just output the num
       { range: 'Images 26–30', count: 5, keyIndex: 9 }
     ];
 
-    const pinPartResults = await Promise.all(
-      chunksConfig.map(chunk =>
-        callAPI({
-          provider: imageProvider,
-          baseUrl: imageBaseUrl,
-          headers: getImageHeaders(chunk.keyIndex),
-          model: IMAGE_PROMPT_MODEL,
-          maxTokens: IMAGE_PROMPT_MAX_TOKENS,
-          systemInstruction: pinterestSysInstruction,
-          messages: [{ role: 'user', content: buildPartRequest(chunk.range, chunk.count) }],
-          onReasoning: (text) => {
-            if (onReasoning) onReasoning(text, `Pinterest ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
-          }
-        })
-      )
-    );
+    // Sequential calls with delay to avoid Mistral rate limits
+    const pinPartResults = [];
+    for (const chunk of chunksConfig) {
+      const partResult = await callAPI({
+        provider: imageProvider,
+        baseUrl: imageBaseUrl,
+        headers: getImageHeaders(chunk.keyIndex),
+        model: IMAGE_PROMPT_MODEL,
+        maxTokens: IMAGE_PROMPT_MAX_TOKENS,
+        systemInstruction: pinterestSysInstruction,
+        messages: [{ role: 'user', content: buildPartRequest(chunk.range, chunk.count) }],
+        onReasoning: (text) => {
+          if (onReasoning) onReasoning(text, `Pinterest ${chunk.range} [${IMAGE_PROMPT_MODEL}]`);
+        }
+      });
+      pinPartResults.push(partResult);
+      if (onProgress) onProgress(`Pinterest image prompts: ${chunk.range} done`, 88);
+      await new Promise(r => setTimeout(r, 600));
+    }
 
     return pinPartResults.join('\n\n')
       .replace(/\n{3,}/g, '\n\n')
@@ -989,6 +995,15 @@ async function callAPI({ provider, baseUrl, headers, model, systemInstruction, m
         }
 
         if (!response.ok) {
+          // Handle 429 rate limit with automatic retry + backoff
+          if (response.status === 429) {
+            const retryAfter = parseInt(response.headers?.get?.('retry-after') || '5', 10);
+            const waitMs = Math.min((retryAfter || 5) * 1000, 15000); // max 15s wait
+            console.warn(`[API] Rate limited (429). Waiting ${waitMs}ms before retry...`);
+            await new Promise(r => setTimeout(r, waitMs));
+            attempt--; // retry same attempt
+            continue;
+          }
           const errorText = await response.text();
           let parsedError;
           try {
